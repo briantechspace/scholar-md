@@ -1,7 +1,4 @@
-const app = require("./server");
+import "./server.js";
+import { startBot } from "./bot.js";
 
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-  console.log("🚀 Server running on port", PORT);
-});
+startBot();
