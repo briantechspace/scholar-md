@@ -1,0 +1,53 @@
+import fetch from "node-fetch";
+
+const MPESA_CONSUMER_KEY = "PUT_CONSUMER_KEY_HERE";
+const MPESA_CONSUMER_SECRET = "PUT_CONSUMER_SECRET_HERE";
+const MPESA_SHORTCODE = "PUT_SHORTCODE_HERE";
+const MPESA_PASSKEY = "PUT_PASSKEY_HERE";
+const MPESA_CALLBACK = "https://your-render-app.onrender.com/api/mpesa/callback";
+
+async function getToken() {
+  const res = await fetch(
+    "https://api.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials",
+    {
+      headers: {
+        Authorization:
+          "Basic " +
+          Buffer.from(`${MPESA_CONSUMER_KEY}:${MPESA_CONSUMER_SECRET}`).toString("base64")
+      }
+    }
+  );
+  return (await res.json()).access_token;
+}
+
+export async function stkPush(phone, amount, ref) {
+  const token = await getToken();
+  const timestamp = new Date().toISOString().replace(/[-:TZ.]/g, "").slice(0,14);
+  const password = Buffer.from(`${MPESA_SHORTCODE}${MPESA_PASSKEY}${timestamp}`).toString("base64");
+
+  const res = await fetch(
+    "https://api.safaricom.co.ke/mpesa/stkpush/v1/processrequest",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        BusinessShortCode: MPESA_SHORTCODE,
+        Password: password,
+        Timestamp: timestamp,
+        TransactionType: "CustomerPayBillOnline",
+        Amount: amount,
+        PartyA: phone,
+        PartyB: MPESA_SHORTCODE,
+        PhoneNumber: phone,
+        CallBackURL: MPESA_CALLBACK,
+        AccountReference: ref,
+        TransactionDesc: "SCHOLAR MD Premium"
+      })
+    }
+  );
+
+  return res.json();
+}
