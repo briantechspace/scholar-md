@@ -1,100 +1,30 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>SCHOLAR MD – Link Device</title>
-
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      color: #fff;
-      overflow: hidden;
-    }
-
-    video {
-      position: fixed;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      z-index: -1;
-    }
-
-    .card {
-      max-width: 520px;
-      margin: 15vh auto;
-      background: rgba(0,0,0,0.7);
-      padding: 28px;
-      border-radius: 14px;
-      text-align: center;
-    }
-
-    input, button {
-      width: 100%;
-      padding: 12px;
-      margin-top: 12px;
-      border-radius: 8px;
-      border: none;
-      font-size: 1rem;
-    }
-
-    button {
-      background: #2563eb;
-      color: #fff;
-      cursor: pointer;
-    }
-
-    .code {
-      margin-top: 16px;
-      font-size: 1.4rem;
-      letter-spacing: 4px;
-      font-weight: bold;
-    }
-  </style>
+  <title>SCHOLAR MD</title>
 </head>
-<body>
+<body style="font-family:Arial;text-align:center;padding:30px">
 
-  <video autoplay muted loop playsinline>
-    <source src="https://files.catbox.moe/on2dfn.mp4" type="video/mp4" />
-  </video>
+  <h2>SCHOLAR MD – Link Device</h2>
 
-  <div class="card">
-    <h2>SCHOLAR MD</h2>
-    <p>Enter your WhatsApp number to generate pairing code</p>
+  <input id="phone" placeholder="2547XXXXXXXX" style="padding:10px;width:80%" />
+  <br><br>
+  <button onclick="pair()" style="padding:10px 20px">Generate Pairing Code</button>
 
-    <input id="phone" placeholder="2547XXXXXXXX" />
-
-    <button onclick="pair()">Generate Pairing Code</button>
-
-    <div id="result" class="code"></div>
-
-    <p style="margin-top:12px;font-size:0.85rem;">
-      WhatsApp → Settings → Linked Devices → Link with phone number
-    </p>
-  </div>
+  <h3 id="result"></h3>
 
   <script>
     async function pair() {
-      const phone = document.getElementById("phone").value.trim();
-      const result = document.getElementById("result");
-
-      result.textContent = "Generating...";
-
+      const phone = document.getElementById("phone").value;
       const res = await fetch("/api/pair", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone })
       });
-
       const data = await res.json();
-
-      if (data.code) {
-        result.textContent = data.code;
-      } else {
-        result.textContent = "Failed. Try again.";
-      }
+      document.getElementById("result").innerText =
+        data.code || data.error;
     }
   </script>
 
