@@ -1,7 +1,84 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+  />
+  <title>SCHOLAR MD – Admin Panel</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 16px;
+      background: #020617;
+      color: #e5e7eb;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    h1 {
+      margin-bottom: 6px;
+    }
+
+    p {
+      margin-top: 0;
+      opacity: 0.9;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .card {
+      background: #0f172a;
+      padding: 20px;
+      border-radius: 12px;
+    }
+
+    .card h3 {
+      margin-top: 0;
+      font-size: 1.1rem;
+    }
+
+    .card p {
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
 <body>
-<h1>Admin Panel</h1>
-<p>Analytics & controls managed server-side</p>
+
+  <h1>SCHOLAR MD – Admin Panel</h1>
+  <p>System overview & controls</p>
+
+  <div class="grid">
+    <div class="card">
+      <h3>Status</h3>
+      <p>Bot running and monitored</p>
+    </div>
+
+    <div class="card">
+      <h3>Users</h3>
+      <p>Active and premium analytics</p>
+    </div>
+
+    <div class="card">
+      <h3>Features</h3>
+      <p>Auto & anti feature toggles</p>
+    </div>
+
+    <div class="card">
+      <h3>Payments</h3>
+      <p>M-Pesa subscription tracking</p>
+    </div>
+  </div>
+
 </body>
 </html>
