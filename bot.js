@@ -1,63 +1,39 @@
 const {
   default: makeWASocket,
   useMultiFileAuthState,
-  DisconnectReason,
-  fetchLatestBaileysVersion
+  fetchLatestBaileysVersion,
+  DisconnectReason
 } = require("@whiskeysockets/baileys");
 
 const P = require("pino");
 
-let sock = null;
-let latestPairingCode = null;
-let isConnecting = false;
+let sock;
+let state;
+let saveCreds;
+let isReady = false;
 
-// ===============================
-// START BOT
-// ===============================
-async function startBot(phoneNumber = null, forcePairing = false) {
-  if (isConnecting) return sock;
-  isConnecting = true;
+async function initSocket() {
+  if (sock) return sock;
 
-  const { state, saveCreds } = await useMultiFileAuthState("auth_info");
+  const auth = await useMultiFileAuthState("auth_info");
+  state = auth.state;
+  saveCreds = auth.saveCreds;
+
   const { version } = await fetchLatestBaileysVersion();
 
-  // If forcing pairing, reset registered state
-  if (forcePairing && state.creds.registered) {
-    state.creds.registered = false;
-  }
-
   sock = makeWASocket({
+    auth: state,
     version,
     logger: P({ level: "silent" }),
-    auth: state,
-    browser: ["SCHOLAR MD", "Chrome", "1.0.0"],
-    printQRInTerminal: false
+    browser: ["SCHOLAR MD", "Chrome", "1.0"]
   });
 
   sock.ev.on("creds.update", saveCreds);
 
-  // ===============================
-  // PAIRING CODE
-  // ===============================
-  if (!state.creds.registered && phoneNumber) {
-    try {
-      latestPairingCode = await sock.requestPairingCode(phoneNumber);
-      console.log("🔑 PAIRING CODE:", latestPairingCode);
-    } catch (err) {
-      console.error("Pairing generation failed:", err.message);
-    }
-  }
-
-  // ===============================
-  // CONNECTION HANDLING
-  // ===============================
-  sock.ev.on("connection.update", (update) => {
-    const { connection, lastDisconnect } = update;
-
+  sock.ev.on("connection.update", ({ connection, lastDisconnect }) => {
     if (connection === "open") {
       console.log("✅ WhatsApp connected");
-      latestPairingCode = null;
-      isConnecting = false;
+      isReady = true;
     }
 
     if (connection === "close") {
@@ -65,53 +41,29 @@ async function startBot(phoneNumber = null, forcePairing = false) {
         lastDisconnect?.error?.output?.statusCode !==
         DisconnectReason.loggedOut;
 
-      console.log("❌ Connection closed");
-
       if (shouldReconnect) {
-        isConnecting = false;
-        startBot();
-      } else {
-        console.log("Logged out. Delete auth_info to relink.");
+        sock = null;
+        initSocket();
       }
-    }
-  });
-
-  // ===============================
-  // BASIC MESSAGE HANDLER (SAFE)
-  // ===============================
-  sock.ev.on("messages.upsert", async ({ messages }) => {
-    try {
-      const msg = messages[0];
-      if (!msg.message || msg.key.fromMe) return;
-
-      const from = msg.key.remoteJid;
-      const text =
-        msg.message.conversation ||
-        msg.message.extendedTextMessage?.text;
-
-      if (!text) return;
-
-      if (text === ".alive") {
-        await sock.sendMessage(from, {
-          text: "✅ SCHOLAR MD is running"
-        });
-      }
-    } catch (err) {
-      console.error("Message error:", err.message);
     }
   });
 
   return sock;
 }
 
-// ===============================
-// EXPORTS
-// ===============================
-function getLatestPairingCode() {
-  return latestPairingCode;
+async function generatePairingCode(phone) {
+  if (!sock) await initSocket();
+
+  if (state.creds.registered) {
+    throw new Error("Bot already linked. Pairing not allowed.");
+  }
+
+  const code = await sock.requestPairingCode(phone);
+  console.log("🔑 Pairing code:", code);
+  return code;
 }
 
 module.exports = {
-  startBot,
-  getLatestPairingCode
+  initSocket,
+  generatePairingCode
 };
