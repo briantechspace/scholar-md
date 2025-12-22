@@ -1,64 +1,15 @@
-import express from "express";
-import path from "path";
-import { fileURLToPath } from "url";
-import { startBot, getLatestPairingCode } from "./bot.js";
+const express = require("express");
+const path = require("path");
+const { startBot, getLatestPairingCode } = require("./bot");
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
-// ===============================
-// PATH SETUP (ESM SAFE)
-// ===============================
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// ===============================
-// MIDDLEWARE
-// ===============================
+// Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Static files
 app.use(express.static(path.join(__dirname, "public")));
-
-// ===============================
-// GLOBAL BOT START (NO PAIRING)
-// ===============================
-// This keeps the bot alive after first link
-startBot();
-
-// ===============================
-// PAIRING API (USED BY link.html)
-// ===============================
-app.post("/api/pair", async (req, res) => {
-  try {
-    const { phone } = req.body;
-
-    if (!phone || !/^\d{10,15}$/.test(phone)) {
-      return res.status(400).json({
-        error: "Invalid phone number format"
-      });
-    }
-
-    // Start bot in pairing mode
-    await startBot(phone);
-
-    // Give Baileys time to generate code
-    setTimeout(() => {
-      const code = getLatestPairingCode();
-
-      if (!code) {
-        return res.status(500).json({
-          error: "Pairing code not ready. Try again."
-        });
-      }
-
-      return res.json({ code });
-    }, 2500);
-
-  } catch (err) {
-    console.error("Pairing error:", err.message);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
 
 // ===============================
 // ROUTES
@@ -76,19 +27,38 @@ app.get("/admin", (req, res) => {
 });
 
 // ===============================
-// HEALTH CHECK
+// PAIRING API (GENERATES NEW CODE EACH REQUEST)
 // ===============================
-app.get("/health", (req, res) => {
-  res.json({
-    status: "ok",
-    service: "SCHOLAR MD",
-    uptime: process.uptime()
-  });
+app.post("/api/pair", async (req, res) => {
+  try {
+    const { phone } = req.body;
+
+    if (!phone || !/^\d{10,15}$/.test(phone)) {
+      return res.status(400).json({ error: "Invalid phone number" });
+    }
+
+    // Force pairing mode → new code every time
+    await startBot(phone, true);
+
+    setTimeout(() => {
+      const code = getLatestPairingCode();
+
+      if (!code) {
+        return res.status(500).json({ error: "Pairing code not ready" });
+      }
+
+      res.json({ code });
+    }, 2500);
+
+  } catch (err) {
+    console.error("Pairing error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
 });
 
-// ===============================
-// START SERVER
-// ===============================
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+// Health check
+app.get("/health", (req, res) => {
+  res.json({ status: "ok", uptime: process.uptime() });
 });
+
+module.exports = app;
