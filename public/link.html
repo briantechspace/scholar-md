@@ -9,11 +9,9 @@
   <title>SCHOLAR MD – Link Device</title>
 
   <style>
-    * { box-sizing: border-box; }
-
     body {
       margin: 0;
-      font-family: Arial, Helvetica, sans-serif;
+      font-family: Arial, sans-serif;
       color: #fff;
       overflow: hidden;
     }
@@ -27,27 +25,17 @@
       z-index: -1;
     }
 
-    .overlay {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-    }
-
     .card {
-      background: rgba(0, 0, 0, 0.7);
+      max-width: 520px;
+      margin: auto;
+      margin-top: 15vh;
+      background: rgba(0,0,0,0.7);
       padding: 28px;
       border-radius: 14px;
-      width: 100%;
-      max-width: 520px;
       text-align: center;
     }
 
-    h1 { margin-bottom: 8px; }
-    p { font-size: 0.95rem; line-height: 1.4; }
-
-    input {
+    input, button {
       width: 100%;
       padding: 12px;
       margin-top: 12px;
@@ -57,77 +45,60 @@
     }
 
     button {
-      width: 100%;
-      margin-top: 12px;
-      padding: 12px;
-      border-radius: 8px;
-      border: none;
       background: #2563eb;
       color: #fff;
-      font-size: 1rem;
       cursor: pointer;
     }
 
-    .hint {
-      margin-top: 12px;
-      font-size: 0.85rem;
-      opacity: 0.9;
+    .code {
+      margin-top: 16px;
+      font-size: 1.4rem;
+      letter-spacing: 4px;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
 
-  <!-- Background video -->
   <video autoplay muted loop playsinline>
     <source src="https://files.catbox.moe/on2dfn.mp4" type="video/mp4" />
   </video>
 
-  <!-- Background music (user-initiated) -->
-  <audio id="bgMusic" loop>
-    <source src="https://files.catbox.moe/on2dfn.mp4" type="audio/mp4">
-  </audio>
+  <div class="card">
+    <h2>SCHOLAR MD</h2>
+    <p>Enter your WhatsApp number to generate pairing code</p>
 
-  <div class="overlay">
-    <div class="card">
-      <h1>SCHOLAR MD</h1>
-      <p><strong>Bright Minds Edition</strong></p>
-      <p>Link your WhatsApp device securely</p>
+    <input id="phone" placeholder="2547XXXXXXXX" />
 
-      <input
-        id="phone"
-        placeholder="Enter phone number (e.g. 2547XXXXXXXX)"
-      />
+    <button onclick="pair()">Generate Pairing Code</button>
 
-      <button onclick="playMusic()">
-        ▶ Enable Background Music
-      </button>
+    <div id="result" class="code"></div>
 
-      <button onclick="generateCode()">
-        🔗 Generate Pairing Code
-      </button>
-
-      <div class="hint">
-        After clicking, go to:<br>
-        <strong>WhatsApp → Settings → Linked Devices → Link with phone number</strong>
-      </div>
-    </div>
+    <p style="margin-top:12px;font-size:0.85rem;">
+      WhatsApp → Settings → Linked Devices → Link with phone number
+    </p>
   </div>
 
   <script>
-    function playMusic() {
-      document.getElementById("bgMusic").play();
-    }
-
-    function generateCode() {
+    async function pair() {
       const phone = document.getElementById("phone").value.trim();
-      if (!phone) {
-        alert("Please enter your phone number first");
-        return;
+      const result = document.getElementById("result");
+
+      result.textContent = "Generating...";
+
+      const res = await fetch("/api/pair", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone })
+      });
+
+      const data = await res.json();
+
+      if (data.code) {
+        result.textContent = data.code;
+      } else {
+        result.textContent = "Failed. Try again.";
       }
-      alert(
-        "Pairing code generation happens server-side.\n" +
-        "If your bot is running, check Render logs or WhatsApp linking screen."
-      );
     }
   </script>
 
