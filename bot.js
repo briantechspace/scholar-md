@@ -1,10 +1,11 @@
-import makeWASocket, {
+const {
+  default: makeWASocket,
   useMultiFileAuthState,
   DisconnectReason,
   fetchLatestBaileysVersion
-} from "@whiskeysockets/baileys";
-import P from "pino";
-import fs from "fs";
+} = require("@whiskeysockets/baileys");
+
+const P = require("pino");
 
 let sock = null;
 let latestPairingCode = null;
@@ -13,12 +14,17 @@ let isConnecting = false;
 // ===============================
 // START BOT
 // ===============================
-export async function startBot(phoneNumber = null) {
+async function startBot(phoneNumber = null, forcePairing = false) {
   if (isConnecting) return sock;
   isConnecting = true;
 
   const { state, saveCreds } = await useMultiFileAuthState("auth_info");
   const { version } = await fetchLatestBaileysVersion();
+
+  // If forcing pairing, reset registered state
+  if (forcePairing && state.creds.registered) {
+    state.creds.registered = false;
+  }
 
   sock = makeWASocket({
     version,
@@ -31,14 +37,14 @@ export async function startBot(phoneNumber = null) {
   sock.ev.on("creds.update", saveCreds);
 
   // ===============================
-  // PAIRING CODE GENERATION
+  // PAIRING CODE
   // ===============================
   if (!state.creds.registered && phoneNumber) {
     try {
       latestPairingCode = await sock.requestPairingCode(phoneNumber);
-      console.log("PAIRING CODE:", latestPairingCode);
+      console.log("🔑 PAIRING CODE:", latestPairingCode);
     } catch (err) {
-      console.error("Failed to generate pairing code:", err.message);
+      console.error("Pairing generation failed:", err.message);
     }
   }
 
@@ -71,7 +77,7 @@ export async function startBot(phoneNumber = null) {
   });
 
   // ===============================
-  // MESSAGE HANDLER (SAFE BASE)
+  // BASIC MESSAGE HANDLER (SAFE)
   // ===============================
   sock.ev.on("messages.upsert", async ({ messages }) => {
     try {
@@ -85,16 +91,11 @@ export async function startBot(phoneNumber = null) {
 
       if (!text) return;
 
-      // BASIC HEALTH CHECK COMMAND
       if (text === ".alive") {
         await sock.sendMessage(from, {
           text: "✅ SCHOLAR MD is running"
         });
       }
-
-      // PLACEHOLDER FOR YOUR COMMAND SYSTEM
-      // (menus, admin, premium, anti-features etc. stay intact)
-
     } catch (err) {
       console.error("Message error:", err.message);
     }
@@ -104,8 +105,13 @@ export async function startBot(phoneNumber = null) {
 }
 
 // ===============================
-// PAIRING CODE ACCESSOR
+// EXPORTS
 // ===============================
-export function getLatestPairingCode() {
+function getLatestPairingCode() {
   return latestPairingCode;
 }
+
+module.exports = {
+  startBot,
+  getLatestPairingCode
+};
