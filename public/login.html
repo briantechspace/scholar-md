@@ -1,9 +1,98 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+  />
+  <title>SCHOLAR MD – Admin Login</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      background: #020617;
+      font-family: Arial, Helvetica, sans-serif;
+      color: #fff;
+    }
+
+    .login {
+      width: 100%;
+      max-width: 420px;
+      background: #0f172a;
+      padding: 28px;
+      border-radius: 14px;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 14px;
+      border-radius: 8px;
+      border: none;
+      outline: none;
+      font-size: 1rem;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      background: #2563eb;
+      color: #fff;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+  </style>
+</head>
 <body>
-<h2>Admin Login</h2>
-<input placeholder="Username"><br><br>
-<input type="password" placeholder="Password"><br><br>
-<button>Login</button>
+
+  <div class="login">
+    <h2>Admin Login</h2>
+
+    <input id="username" placeholder="Username" />
+    <input id="password" type="password" placeholder="Password" />
+
+    <button onclick="login()">Login</button>
+  </div>
+
+  <script>
+    async function login() {
+      const res = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: username.value,
+          password: password.value
+        })
+      });
+
+      if (res.ok) {
+        location.href = "/admin";
+      } else {
+        alert("Invalid login");
+      }
+    }
+  </script>
+
 </body>
 </html>
