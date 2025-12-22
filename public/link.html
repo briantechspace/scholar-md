@@ -1,20 +1,90 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>SCHOLAR MD</title>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+  />
+  <title>SCHOLAR MD – Link Device</title>
+
   <style>
-    body { margin:0; color:white; text-align:center; }
-    video { position:fixed; min-width:100%; min-height:100%; z-index:-1; }
-    .box { margin-top:15%; background:rgba(0,0,0,.6); padding:30px; }
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      font-family: Arial, Helvetica, sans-serif;
+      overflow: hidden;
+      color: #fff;
+    }
+
+    video {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: -1;
+    }
+
+    .wrapper {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .card {
+      background: rgba(0, 0, 0, 0.65);
+      border-radius: 14px;
+      padding: 28px;
+      width: 100%;
+      max-width: 520px;
+      text-align: center;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: 2rem;
+    }
+
+    p {
+      margin: 6px 0;
+      font-size: 1rem;
+      line-height: 1.4;
+    }
+
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 1.6rem;
+      }
+
+      .card {
+        padding: 22px;
+      }
+    }
   </style>
 </head>
 <body>
-  <video autoplay muted loop>
-    <source src="https://files.catbox.moe/on2dfn.mp4" type="video/mp4">
+
+  <video autoplay muted loop playsinline>
+    <source src="https://files.catbox.moe/on2dfn.mp4" type="video/mp4" />
   </video>
-  <div class="box">
-    <h1>SCHOLAR MD</h1>
-    <p>Link your WhatsApp device</p>
+
+  <div class="wrapper">
+    <div class="card">
+      <h1>SCHOLAR MD</h1>
+      <p><strong>Bright Minds Edition</strong></p>
+      <p>Link your WhatsApp device securely</p>
+      <p>QR code or pairing code supported</p>
+    </div>
   </div>
+
 </body>
 </html>
