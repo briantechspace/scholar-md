@@ -1,35 +1,20 @@
-const express = require("express");
-const path = require("path");
-const { initSocket, generatePairingCode } = require("./bot");
+import http from "http";
+import fs from "fs";
 
-const app = express();
+const PORT = process.env.PORT || 3000;
 
-app.use(express.json());
-app.use(express.static(path.join(__dirname, "public")));
-
-// Initialize socket ONCE
-initSocket();
-
-// Routes
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "link.html"));
-});
-
-app.post("/api/pair", async (req, res) => {
-  try {
-    const { phone } = req.body;
-
-    if (!phone || !/^\d{10,15}$/.test(phone)) {
-      return res.status(400).json({ error: "Invalid phone number" });
-    }
-
-    const code = await generatePairingCode(phone);
-    res.json({ code });
-
-  } catch (err) {
-    console.error("Pairing error:", err.message);
-    res.status(500).json({ error: "Failed to generate pairing code" });
+http.createServer((req,res)=>{
+  if(req.url==="/"){
+    res.writeHead(200,{"Content-Type":"text/html"});
+    return res.end(fs.readFileSync("./public/link.html"));
   }
-});
-
-module.exports = app;
+  if(req.url==="/admin/login"){
+    res.end(fs.readFileSync("./public/login.html"));
+    return;
+  }
+  if(req.url==="/admin"){
+    res.end(fs.readFileSync("./public/admin.html"));
+    return;
+  }
+  res.writeHead(404);res.end("Not Found");
+}).listen(PORT);
