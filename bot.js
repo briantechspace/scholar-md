@@ -1,69 +1,82 @@
-const {
-  default: makeWASocket,
-  useMultiFileAuthState,
-  fetchLatestBaileysVersion,
-  DisconnectReason
-} = require("@whiskeysockets/baileys");
+import makeWASocket, { useMultiFileAuthState } from "@whiskeysockets/baileys";
+import Pino from "pino";
+import fs from "fs";
+import { config } from "./config.js";
+import { store } from "./store.js";
 
-const P = require("pino");
+const USERS = "./users.json";
+const ANALYTICS = "./analytics.json";
 
-let sock;
-let state;
-let saveCreds;
-let isReady = false;
+const read = f => JSON.parse(fs.readFileSync(f));
+const write = (f,d) => fs.writeFileSync(f, JSON.stringify(d,null,2));
 
-async function initSocket() {
-  if (sock) return sock;
+function nowEAT() {
+  return new Date(
+    new Date().toLocaleString("en-US", { timeZone: config.timezone })
+  );
+}
 
-  const auth = await useMultiFileAuthState("auth_info");
-  state = auth.state;
-  saveCreds = auth.saveCreds;
+export async function startBot() {
+  const { state, saveCreds } = await useMultiFileAuthState("auth_info");
 
-  const { version } = await fetchLatestBaileysVersion();
-
-  sock = makeWASocket({
+  const sock = makeWASocket({
     auth: state,
-    version,
-    logger: P({ level: "silent" }),
-    browser: ["SCHOLAR MD", "Chrome", "1.0"]
+    logger: Pino({ level: "silent" }),
+    printQRInTerminal: true
   });
 
   sock.ev.on("creds.update", saveCreds);
 
-  sock.ev.on("connection.update", ({ connection, lastDisconnect }) => {
-    if (connection === "open") {
-      console.log("✅ WhatsApp connected");
-      isReady = true;
-    }
-
-    if (connection === "close") {
-      const shouldReconnect =
-        lastDisconnect?.error?.output?.statusCode !==
-        DisconnectReason.loggedOut;
-
-      if (shouldReconnect) {
-        sock = null;
-        initSocket();
-      }
-    }
+  sock.ev.on("connection.update", ({ connection }) => {
+    const a = read(ANALYTICS);
+    if (connection === "open") a.connected = true;
+    if (connection === "close") a.connected = false;
+    write(ANALYTICS, a);
   });
 
-  return sock;
+  sock.ev.on("messages.upsert", async ({ messages }) => {
+    const msg = messages[0];
+    if (!msg?.message || msg.key.fromMe) return;
+
+    const sender = msg.key.participant || msg.key.remoteJid;
+    const text = msg.message.conversation || msg.message.extendedTextMessage?.text;
+    if (!text) return;
+
+    const users = read(USERS);
+    const now = nowEAT();
+
+    if (!users[sender]) {
+      users[sender] = {
+        freeUntil: new Date(now.getTime() + 3*24*60*60*1000).toISOString(),
+        premiumUntil: null
+      };
+    }
+
+    const user = users[sender];
+
+    if (
+      (!user.premiumUntil || now > new Date(user.premiumUntil)) &&
+      now > new Date(user.freeUntil)
+    ) {
+      await sock.sendMessage(sender, {
+        text: "❌ Free plan expired. Use .addprem to upgrade."
+      });
+      write(USERS, users);
+      return;
+    }
+
+    if (text === ".menu") {
+      await sock.sendMessage(sender, {
+        text: `${config.botName}\n${config.edition}\nType .help`
+      });
+    }
+
+    if (text === ".help") {
+      await sock.sendMessage(sender, {
+        text: "Use .menu to see commands.\nFree: 3 days\nPremium: 50 KES / 30 days"
+      });
+    }
+
+    write(USERS, users);
+  });
 }
-
-async function generatePairingCode(phone) {
-  if (!sock) await initSocket();
-
-  if (state.creds.registered) {
-    throw new Error("Bot already linked. Pairing not allowed.");
-  }
-
-  const code = await sock.requestPairingCode(phone);
-  console.log("🔑 Pairing code:", code);
-  return code;
-}
-
-module.exports = {
-  initSocket,
-  generatePairingCode
-};
