@@ -1,8 +1,8 @@
 import fetch from "node-fetch";
 
-const MPESA_CONSUMER_KEY = "PUT_CONSUMER_KEY_HERE";
-const MPESA_CONSUMER_SECRET = "PUT_CONSUMER_SECRET_HERE";
-const MPESA_SHORTCODE = "PUT_SHORTCODE_HERE";
+const MPESA_CONSUMER_KEY = "SyKDM3mfjAVijZCp3olDeD6KP53SklOkbjnEfUiRPmEGQwvE";
+const MPESA_CONSUMER_SECRET = "4uqwHRhpP49TAKNOFamjxdyu2hIgkYR355yjivY7czE4GyVEAYpWAbyDqcVtKvPJ";
+const MPESA_SHORTCODE = "174379";
 const MPESA_PASSKEY = "PUT_PASSKEY_HERE";
 const MPESA_CALLBACK = "https://your-render-app.onrender.com/api/mpesa/callback";
 
