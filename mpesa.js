@@ -4,7 +4,7 @@ const MPESA_CONSUMER_KEY = "SyKDM3mfjAVijZCp3olDeD6KP53SklOkbjnEfUiRPmEGQwvE";
 const MPESA_CONSUMER_SECRET = "4uqwHRhpP49TAKNOFamjxdyu2hIgkYR355yjivY7czE4GyVEAYpWAbyDqcVtKvPJ";
 const MPESA_SHORTCODE = "174379";
 const MPESA_PASSKEY = "bfb279f9aa9bdbcf158e97dd71a467cd";
-const MPESA_CALLBACK = "https://your-render-app.onrender.com/api/mpesa/callback";
+const MPESA_CALLBACK = "https://scholar-md.onrender.com/api/mpesa/callback";
 
 async function getToken() {
   const res = await fetch(
