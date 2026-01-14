@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scholar MD - WhatsApp Bot Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #25D366;
+            --secondary: #128C7E;
+            --dark: #075E54;
+            --light: #DCF8C6;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+        
+        .gradient-text {
+            background: linear-gradient(45deg, #25D366, #128C7E);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .pulse-dot {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .category-card {
+            transition: all 0.3s ease;
+        }
+        
+        .category-card:hover {
+            transform: scale(1.02);
+        }
+    </style>
+</head>
+<body class="text-white">
+    <!-- Navigation -->
+    <nav class="glass sticky top-0 z-50 px-6 py-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <i class="fas fa-graduation-cap text-3xl text-green-400"></i>
+                <span class="text-2xl font-bold">Scholar MD</span>
+            </div>
+            <div class="hidden md:flex space-x-6">
+                <a href="#features" class="hover:text-green-400 transition">Features</a>
+                <a href="#commands" class="hover:text-green-400 transition">Commands</a>
+                <a href="#pricing" class="hover:text-green-400 transition">Pricing</a>
+                <a href="#faq" class="hover:text-green-400 transition">FAQ</a>
+            </div>
+            <a href="/link.html" class="bg-green-500 hover:bg-green-600 px-6 py-2 rounded-full font-semibold transition">
+                Connect Bot
+            </a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="container mx-auto px-6 py-20 text-center">
+        <div class="flex justify-center mb-8">
+            <div class="relative">
+                <i class="fas fa-graduation-cap text-8xl text-green-400"></i>
+                <span class="absolute -top-2 -right-2 w-6 h-6 bg-green-400 rounded-full pulse-dot"></span>
+            </div>
+        </div>
+        <h1 class="text-5xl md:text-7xl font-bold mb-6">
+            Scholar <span class="gradient-text">MD</span>
+        </h1>
+        <p class="text-xl md:text-2xl text-gray-300 mb-8 max-w-2xl mx-auto">
+            The most powerful WhatsApp bot with 200+ commands. Download media, create stickers, use AI, play games & more!
+        </p>
+        <div class="flex flex-col sm:flex-row justify-center gap-4">
+            <a href="/link.html" class="bg-green-500 hover:bg-green-600 px-8 py-4 rounded-full text-lg font-semibold transition">
+                <i class="fab fa-whatsapp mr-2"></i> Start Using Now
+            </a>
+            <a href="#commands" class="glass hover:bg-white/20 px-8 py-4 rounded-full text-lg font-semibold transition">
+                <i class="fas fa-list mr-2"></i> View Commands
+            </a>
+        </div>
+        
+        <!-- Stats -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mt-16">
+            <div class="glass rounded-2xl p-6">
+                <div class="text-4xl font-bold text-green-400">200+</div>
+                <div class="text-gray-300">Commands</div>
+            </div>
+            <div class="glass rounded-2xl p-6">
+                <div class="text-4xl font-bold text-green-400">12</div>
+                <div class="text-gray-300">Categories</div>
+            </div>
+            <div class="glass rounded-2xl p-6">
+                <div class="text-4xl font-bold text-green-400">24/7</div>
+                <div class="text-gray-300">Uptime</div>
+            </div>
+            <div class="glass rounded-2xl p-6">
+                <div class="text-4xl font-bold text-green-400">Free</div>
+                <div class="text-gray-300">3-Day Trial</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="container mx-auto px-6 py-20">
+        <h2 class="text-4xl font-bold text-center mb-16">✨ Amazing Features</h2>
+        <div class="grid md:grid-cols-3 gap-8">
+            <div class="glass rounded-2xl p-8 card-hover transition">
+                <div class="text-5xl mb-4">📥</div>
+                <h3 class="text-2xl font-bold mb-3">Media Downloader</h3>
+                <p class="text-gray-300">Download from YouTube, TikTok, Instagram, Facebook, Twitter, Spotify & more!</p>
+            </div>
+            <div class="glass rounded-2xl p-8 card-hover transition">
+                <div class="text-5xl mb-4">🤖</div>
+                <h3 class="text-2xl font-bold mb-3">AI Powered</h3>
+                <p class="text-gray-300">Chat with GPT, Gemini, generate images with DALL-E, and get AI-powered assistance.</p>
+            </div>
+            <div class="glass rounded-2xl p-8 card-hover transition">
+                <div class="text-5xl mb-4">🎨</div>
+                <h3 class="text-2xl font-bold mb-3">Sticker Creator</h3>
+                <p class="text-gray-300">Create custom stickers from images, videos, and text with one command!</p>
+            </div>
+            <div class="glass rounded-2xl p-8 card-hover transition">
+                <div class="text-5xl mb-4">🎮</div>
+                <h3 class="text-2xl font-bold mb-3">Fun Games</h3>
+                <p class="text-gray-300">Play games like trivia, truth or dare, RPS, slot machine, and more!</p>
+            </div>
+            <div class="glass rounded-2xl p-8 card-hover transition">
+                <div class="text-5xl mb-4">👥</div>
+                <h3 class="text-2xl font-bold mb-3">Group Management</h3>
+                <p class="text-gray-300">Advanced admin tools: antilink, welcome messages, warnings, and more!</p>
+            </div>
+            <div class="glass rounded-2xl p-8 card-hover transition">
+                <div class="text-5xl mb-4">🔧</div>
+                <h3 class="text-2xl font-bold mb-3">Utility Tools</h3>
+                <p class="text-gray-300">Calculator, translator, weather, QR codes, URL shortener & more tools!</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Commands Section -->
+    <section id="commands" class="container mx-auto px-6 py-20">
+        <h2 class="text-4xl font-bold text-center mb-16">📋 Command Categories</h2>
+        <div class="grid md:grid-cols-4 gap-6">
+            <!-- Category Cards -->
+            <div class="category-card glass rounded-2xl p-6 cursor-pointer" onclick="showCategory('downloader')">
+                <div class="text-4xl mb-3">📥</div>
+                <h3 class="text-xl font-bold">Downloader</h3>
+                <p class="text-sm text-gray-300 mt-2">17 commands</p>
+            </div>
+            <div class="category-card glass rounded-2xl p-6 cursor-pointer" onclick="showCategory('sticker')">
+                <div class="text-4xl mb-3">🎨</div>
+                <h3 class="text-xl font-bold">Sticker</h3>
+                <p class="text-sm text-gray-300 mt-2">12 commands</p>
+            </div>
+            <div class="category-card glass rounded-2xl p-6 cursor-pointer" onclick="showCategory('ai')">
+                <div class="text-4xl mb-3">🤖</div>
+                <h3 class="text-xl font-bold">AI</h3>
+                <p class="text-sm text-gray-300 mt-2">14 commands</p>
+            </div>
+            <div class="category-card glass rounded-2xl p-6 cursor-pointer" onclick="showCategory('games')">
+                <div class="text-4xl mb-3">🎮</div>
+                <h3 class="text-xl font-bold">Games</h3>
+                <p class="text-sm text-gray-300 mt-2">25 commands</p>
+            </div>
+            <div class="category-card glass rounded-2xl p-6 cursor-pointer" onclick="showCategory('tools')">
+                <div class="text-4xl mb-3">🔧</div>
+                <h3 class="text-xl font-bold">Tools</h3>
+                <p class="text-sm text-gray-300 mt-2">20 commands</p>
+            </div>
+            <div class="category-card glass rounded-2xl p-6 cursor-pointer" onclick="showCategory('group')">
+                <div class="text-4xl mb-3">👥</div>
+                <h3 class="text-xl font-bold">Group</h3>
+                <p class="text-sm text-gray-300 mt-2">30 commands</p>
+            </div>
+            <div class="category-card glass rounded-2xl p-6 cursor-pointer" onclick="showCategory('fun')">
+                <div class="text-4xl mb-3">🎭</div>
+                <h3 class="text-xl font-bold">Fun</h3>
+                <p class="text-sm text-gray-300 mt-2">25 commands</p>
+            </div>
+            <div class="category-card glass rounded-2xl p-6 cursor-pointer" onclick="showCategory('search')">
+                <div class="text-4xl mb-3">🔍</div>
+                <h3 class="text-xl font-bold">Search</h3>
+                <p class="text-sm text-gray-300 mt-2">20 commands</p>
+            </div>
+            <div class="category-card glass rounded-2xl p-6 cursor-pointer" onclick="showCategory('image')">
+                <div class="text-4xl mb-3">🖼️</div>
+                <h3 class="text-xl font-bold">Image</h3>
+                <p class="text-sm text-gray-300 mt-2">25 commands</p>
+            </div>
+            <div class="category-card glass rounded-2xl p-6 cursor-pointer" onclick="showCategory('audio')">
+                <div class="text-4xl mb-3">🔊</div>
+                <h3 class="text-xl font-bold">Audio</h3>
+                <p class="text-sm text-gray-300 mt-2">15 commands</p>
+            </div>
+            <div class="category-card glass rounded-2xl p-6 cursor-pointer" onclick="showCategory('primbon')">
+                <div class="text-4xl mb-3">🔮</div>
+                <h3 class="text-xl font-bold">Primbon</h3>
+                <p class="text-sm text-gray-300 mt-2">20 commands</p>
+            </div>
+            <div class="category-card glass rounded-2xl p-6 cursor-pointer" onclick="showCategory('owner')">
+                <div class="text-4xl mb-3">👑</div>
+                <h3 class="text-xl font-bold">Owner</h3>
+                <p class="text-sm text-gray-300 mt-2">30 commands</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="container mx-auto px-6 py-20">
+        <h2 class="text-4xl font-bold text-center mb-16">💎 Premium Plans</h2>
+        <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            <div class="glass rounded-2xl p-8 text-center">
+                <div class="text-2xl font-bold mb-2">Free Trial</div>
+                <div class="text-5xl font-bold text-green-400 mb-4">3 Days</div>
+                <ul class="text-left space-y-3 mb-8">
+                    <li><i class="fas fa-check text-green-400 mr-2"></i> 50 commands/day</li>
+                    <li><i class="fas fa-check text-green-400 mr-2"></i> Basic downloads</li>
+                    <li><i class="fas fa-check text-green-400 mr-2"></i> Sticker creation</li>
+                    <li><i class="fas fa-times text-red-400 mr-2"></i> AI features</li>
+                    <li><i class="fas fa-times text-red-400 mr-2"></i> Premium support</li>
+                </ul>
+                <a href="/link.html" class="block w-full bg-gray-600 hover:bg-gray-700 py-3 rounded-full font-semibold transition">
+                    Try Free
+                </a>
+            </div>
+            <div class="glass rounded-2xl p-8 text-center border-2 border-green-400 transform scale-105">
+                <div class="bg-green-400 text-black px-4 py-1 rounded-full text-sm font-bold inline-block mb-4">POPULAR</div>
+                <div class="text-2xl font-bold mb-2">Premium</div>
+                <div class="text-5xl font-bold text-green-400 mb-4">KES 50</div>
+                <div class="text-gray-300 mb-4">per month</div>
+                <ul class="text-left space-y-3 mb-8">
+                    <li><i class="fas fa-check text-green-400 mr-2"></i> Unlimited commands</li>
+                    <li><i class="fas fa-check text-green-400 mr-2"></i> All downloads</li>
+                    <li><i class="fas fa-check text-green-400 mr-2"></i> All stickers</li>
+                    <li><i class="fas fa-check text-green-400 mr-2"></i> AI features</li>
+                    <li><i class="fas fa-check text-green-400 mr-2"></i> Priority support</li>
+                </ul>
+                <a href="/link.html" class="block w-full bg-green-500 hover:bg-green-600 py-3 rounded-full font-semibold transition">
+                    Get Premium
+                </a>
+            </div>
+            <div class="glass rounded-2xl p-8 text-center">
+                <div class="text-2xl font-bold mb-2">VIP</div>
+                <div class="text-5xl font-bold text-green-400 mb-4">KES 100</div>
+                <div class="text-gray-300 mb-4">per month</div>
+                <ul class="text-left space-y-3 mb-8">
+                    <li><i class="fas fa-check text-green-400 mr-2"></i> Everything in Premium</li>
+                    <li><i class="fas fa-check text-green-400 mr-2"></i> Custom bot name</li>
+                    <li><i class="fas fa-check text-green-400 mr-2"></i> Beta features</li>
+                    <li><i class="fas fa-check text-green-400 mr-2"></i> Direct support</li>
+                    <li><i class="fas fa-check text-green-400 mr-2"></i> Feature requests</li>
+                </ul>
+                <a href="/link.html" class="block w-full bg-purple-500 hover:bg-purple-600 py-3 rounded-full font-semibold transition">
+                    Get VIP
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section id="faq" class="container mx-auto px-6 py-20">
+        <h2 class="text-4xl font-bold text-center mb-16">❓ FAQ</h2>
+        <div class="max-w-3xl mx-auto space-y-4">
+            <div class="glass rounded-xl p-6">
+                <h3 class="text-xl font-bold mb-2">How do I connect the bot?</h3>
+                <p class="text-gray-300">Click "Connect Bot" button, scan the QR code with WhatsApp, and you're done!</p>
+            </div>
+            <div class="glass rounded-xl p-6">
+                <h3 class="text-xl font-bold mb-2">Is the bot safe to use?</h3>
+                <p class="text-gray-300">Yes! We don't store any personal data. The bot uses WhatsApp Web protocol.</p>
+            </div>
+            <div class="glass rounded-xl p-6">
+                <h3 class="text-xl font-bold mb-2">How do I pay for premium?</h3>
+                <p class="text-gray-300">Use M-Pesa! Just type .buy in WhatsApp and follow the instructions.</p>
+            </div>
+            <div class="glass rounded-xl p-6">
+                <h3 class="text-xl font-bold mb-2">Can I use the bot in groups?</h3>
+                <p class="text-gray-300">Absolutely! The bot works in both private chats and groups.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="glass mt-20 py-12">
+        <div class="container mx-auto px-6">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="flex items-center space-x-3 mb-6 md:mb-0">
+                    <i class="fas fa-graduation-cap text-3xl text-green-400"></i>
+                    <span class="text-2xl font-bold">Scholar MD</span>
+                </div>
+                <div class="flex space-x-6">
+                    <a href="#" class="text-2xl hover:text-green-400 transition"><i class="fab fa-github"></i></a>
+                    <a href="#" class="text-2xl hover:text-green-400 transition"><i class="fab fa-telegram"></i></a>
+                    <a href="#" class="text-2xl hover:text-green-400 transition"><i class="fab fa-whatsapp"></i></a>
+                </div>
+            </div>
+            <div class="text-center text-gray-400 mt-8">
+                © 2026 Scholar MD. All rights reserved.
+            </div>
+        </div>
+    </footer>
+
+    <!-- Command Modal -->
+    <div id="commandModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="glass rounded-2xl p-8 max-w-lg w-full max-h-[80vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 id="modalTitle" class="text-2xl font-bold"></h3>
+                <button onclick="closeModal()" class="text-2xl hover:text-red-400">&times;</button>
+            </div>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+
+    <script>
+        const categories = {
+            downloader: ['play', 'song', 'video', 'ytmp3', 'ytmp4', 'tiktok', 'instagram', 'facebook', 'twitter', 'spotify', 'mediafire', 'apk', 'pinterest', 'gdrive'],
+            sticker: ['sticker', 's', 'toimg', 'emojimix', 'attp', 'ttp', 'take', 'steal', 'smeme', 'wm', 'crop', 'circle'],
+            ai: ['ai', 'gpt', 'chatgpt', 'gemini', 'bard', 'blackbox', 'imagine', 'dalle', 'stable', 'aiart', 'aivoice', 'aicode'],
+            games: ['roll', 'flip', 'rps', 'slot', 'quiz', 'trivia', 'truth', 'dare', '8ball', 'love', 'ship', 'rate', 'roast', 'simp'],
+            tools: ['calc', 'translate', 'tts', 'weather', 'define', 'wiki', 'ss', 'qr', 'readqr', 'short', 'currency', 'ocr', 'reminder', 'poll'],
+            group: ['kick', 'add', 'promote', 'demote', 'mute', 'unmute', 'hidetag', 'tagall', 'antilink', 'welcome', 'warn', 'groupinfo'],
+            fun: ['joke', 'quote', 'fact', 'meme', 'pickup', 'insult', 'compliment', 'advice', 'riddle', 'lyrics', 'anime', 'waifu', 'neko'],
+            search: ['google', 'youtube', 'image', 'gif', 'playstore', 'github', 'npm', 'imdb', 'movie', 'manga'],
+            image: ['blur', 'removebg', 'enhance', 'cartoon', 'pixelate', 'invert', 'grayscale', 'sepia', 'rotate', 'mirror', 'wanted', 'jail'],
+            audio: ['bass', 'blown', 'slow', 'fast', 'reverse', 'nightcore', 'earrape', 'deep', 'robot', 'chipmunk', '8d', 'echo'],
+            primbon: ['zodiac', 'horoscope', 'tarot', 'shio', 'artinama', 'jodoh', 'ramalan', 'mimpi', 'numerology', 'fengshui'],
+            owner: ['addprem', 'delprem', 'ban', 'unban', 'broadcast', 'setname', 'setbio', 'restart', 'shutdown', 'mode', 'eval', 'exec']
+        };
+
+        function showCategory(cat) {
+            const modal = document.getElementById('commandModal');
+            const title = document.getElementById('modalTitle');
+            const content = document.getElementById('modalContent');
+            
+            const emojis = {
+                downloader: '📥', sticker: '🎨', ai: '🤖', games: '🎮',
+                tools: '🔧', group: '👥', fun: '🎭', search: '🔍',
+                image: '🖼️', audio: '🔊', primbon: '🔮', owner: '👑'
+            };
+            
+            title.innerHTML = `${emojis[cat]} ${cat.charAt(0).toUpperCase() + cat.slice(1)} Commands`;
+            content.innerHTML = categories[cat].map(cmd => 
+                `<div class="bg-white/10 rounded-lg p-3 mb-2 hover:bg-white/20 transition">
+                    <code class="text-green-400">.${cmd}</code>
+                </div>`
+            ).join('');
+            
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('commandModal').classList.add('hidden');
+        }
+
+        document.getElementById('commandModal').addEventListener('click', (e) => {
+            if (e.target.id === 'commandModal') closeModal();
+        });
+    </script>
+</body>
+</html>
