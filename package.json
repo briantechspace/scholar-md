@@ -1,9 +1,12 @@
 {
   "name": "scholar-md",
-  "version": "1.0.0",
+  "version": "2.0.0",
+  "description": "SCHOLAR MD - Smart WhatsApp Bot (Bright Minds Edition)",
   "type": "module",
+  "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "dev": "node --watch index.js"
   },
   "engines": {
     "node": ">=18"
@@ -11,7 +14,11 @@
   "dependencies": {
     "@whiskeysockets/baileys": "^6.7.10",
     "express": "^4.19.2",
+    "pino": "^9.0.0",
     "qrcode": "^1.5.4",
-    "whatsapp-web.js": "^1.26.0"
-  }
+    "node-fetch": "^3.3.2"
+  },
+  "keywords": ["whatsapp", "bot", "baileys", "scholar-md"],
+  "author": "Brian Tech",
+  "license": "MIT"
 }

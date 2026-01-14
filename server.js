@@ -1,152 +1,194 @@
-const fs = require("fs");
-const path = require("path");
-const express = require("express");
-const qrcode = require("qrcode");
-const { Client, LocalAuth } = require("whatsapp-web.js");
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import express from "express";
+import QRCode from "qrcode";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const PORT = process.env.PORT || 3000;
 const STATIC_DIR = path.resolve(__dirname, "public");
-const SESSIONS_DIR = path.resolve(__dirname, "sessions");
+const ANALYTICS = "./analytics.json";
+const USERS = "./users.json";
+const PAYMENTS = "./payments.json";
+const ADMINS = "./admins.json";
 
-// Ensure sessions directory exists
-if (!fs.existsSync(SESSIONS_DIR)) {
-  fs.mkdirSync(SESSIONS_DIR, { recursive: true });
-}
+const safeRead = (f, defaultValue = {}) => {
+  try {
+    const raw = fs.readFileSync(f, "utf8");
+    return JSON.parse(raw || "{}");
+  } catch (e) {
+    try {
+      fs.writeFileSync(f, JSON.stringify(defaultValue, null, 2));
+    } catch (writeErr) {}
+    return defaultValue;
+  }
+};
+
+const write = (f, d) => fs.writeFileSync(f, JSON.stringify(d, null, 2));
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(STATIC_DIR));
 
+// Store pairing state globally so bot.js can update it
+export const pairingState = {
+  qr: null,
+  qrDataUrl: null,
+  pairingCode: null,
+  status: "disconnected",
+  connectedNumber: null,
+  lastUpdated: null,
+  requestedPhone: null,
+  pairingRequested: false
+};
+
 /* =========================
-   PAIRING STATE
+   API ROUTES
 ========================= */
 
-const pairings = new Map();
+// Get current connection status and QR
+app.get("/api/status", async (req, res) => {
+  const analytics = safeRead(ANALYTICS, { connected: false });
+  
+  res.json({
+    status: analytics.connected ? "connected" : pairingState.status,
+    qrDataUrl: pairingState.qrDataUrl,
+    pairingCode: pairingState.pairingCode,
+    connectedNumber: pairingState.connectedNumber,
+    lastUpdated: pairingState.lastUpdated
+  });
+});
 
-function generatePairCode(len = 8) {
-  const chars = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
-  let out = "";
-  for (let i = 0; i < len; i++) {
-    out += chars[Math.floor(Math.random() * chars.length)];
+// Request pairing code for a phone number
+app.post("/api/pair/request", async (req, res) => {
+  const { phone } = req.body;
+  
+  if (!phone) {
+    return res.status(400).json({ error: "Phone number required" });
   }
-  return out;
-}
-
-function makeClientForCode(code) {
-  const client = new Client({
-    authStrategy: new LocalAuth({
-      clientId: code,
-      dataPath: SESSIONS_DIR,
-    }),
-    puppeteer: {
-      headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    },
+  
+  // Clean phone number
+  const cleanPhone = phone.replace(/[^0-9]/g, "");
+  
+  if (cleanPhone.length < 10) {
+    return res.status(400).json({ error: "Invalid phone number" });
+  }
+  
+  // Store request - bot.js will handle actual pairing
+  pairingState.requestedPhone = cleanPhone;
+  pairingState.pairingRequested = true;
+  pairingState.lastUpdated = new Date().toISOString();
+  
+  res.json({ 
+    success: true, 
+    message: "Pairing initiated. Check status for QR or pairing code.",
+    phone: cleanPhone
   });
+});
 
-  pairings.set(code, {
-    client,
-    status: "initializing",
-    qrDataUrl: null,
-    connectedNumber: null,
-    lastError: null,
-    createdAt: Date.now(),
+// Get QR as image
+app.get("/api/qr", async (req, res) => {
+  if (!pairingState.qr) {
+    return res.status(404).json({ error: "No QR available" });
+  }
+  
+  try {
+    const buffer = await QRCode.toBuffer(pairingState.qr, { 
+      width: 300, 
+      margin: 2,
+      color: { dark: "#000", light: "#fff" }
+    });
+    res.set("Content-Type", "image/png");
+    res.set("Cache-Control", "no-store");
+    res.send(buffer);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to generate QR" });
+  }
+});
+
+// Admin login
+app.post("/api/admin/login", (req, res) => {
+  const { username, password } = req.body;
+  const admins = safeRead(ADMINS, { main: { username: "admin", passwordHash: "" } });
+  
+  // Simple check (in production use bcrypt.compare)
+  if (username === admins.main?.username && password === "scholar2024") {
+    res.json({ success: true, token: "admin-session-token" });
+  } else {
+    res.status(401).json({ error: "Invalid credentials" });
+  }
+});
+
+// Get analytics/stats
+app.get("/api/analytics", (req, res) => {
+  const analytics = safeRead(ANALYTICS, {});
+  const users = safeRead(USERS, {});
+  const payments = safeRead(PAYMENTS, []);
+  
+  const userCount = Object.keys(users).length;
+  const premiumUsers = Object.values(users).filter(u => 
+    u.premiumUntil && new Date(u.premiumUntil) > new Date()
+  ).length;
+  
+  res.json({
+    connected: analytics.connected || false,
+    totalUsers: userCount,
+    premiumUsers,
+    freeUsers: userCount - premiumUsers,
+    totalPayments: payments.length,
+    revenue: payments.reduce((sum, p) => sum + (p.amount || 0), 0)
   });
+});
 
-  client.on("qr", async (qr) => {
-    try {
-      const dataUrl = await qrcode.toDataURL(qr, { width: 300, margin: 1 });
-      const p = pairings.get(code);
-      if (p) {
-        p.qrDataUrl = dataUrl;
-        p.status = "qr";
+// Get users list
+app.get("/api/users", (req, res) => {
+  const users = safeRead(USERS, {});
+  const userList = Object.entries(users).map(([jid, data]) => ({
+    jid,
+    phone: jid.split("@")[0],
+    ...data
+  }));
+  res.json(userList);
+});
+
+// M-Pesa callback endpoint
+app.post("/api/mpesa/callback", (req, res) => {
+  console.log("M-Pesa Callback:", JSON.stringify(req.body, null, 2));
+  
+  const { Body } = req.body;
+  if (Body?.stkCallback) {
+    const { ResultCode, ResultDesc, CallbackMetadata } = Body.stkCallback;
+    
+    if (ResultCode === 0 && CallbackMetadata) {
+      const items = CallbackMetadata.Item || [];
+      const payment = {
+        timestamp: new Date().toISOString(),
+        amount: items.find(i => i.Name === "Amount")?.Value,
+        phone: items.find(i => i.Name === "PhoneNumber")?.Value,
+        receipt: items.find(i => i.Name === "MpesaReceiptNumber")?.Value,
+        status: "success"
+      };
+      
+      const payments = safeRead(PAYMENTS, []);
+      payments.push(payment);
+      write(PAYMENTS, payments);
+      
+      // Upgrade user to premium
+      if (payment.phone) {
+        const users = safeRead(USERS, {});
+        const userJid = `${payment.phone}@s.whatsapp.net`;
+        if (users[userJid]) {
+          users[userJid].premiumUntil = new Date(Date.now() + 30*24*60*60*1000).toISOString();
+          write(USERS, users);
+        }
       }
-      console.log(`[pair:${code}] QR generated`);
-    } catch (err) {
-      console.error("QR error:", err);
     }
-  });
-
-  client.on("ready", () => {
-    const p = pairings.get(code);
-    if (p) p.status = "connected";
-    console.log(`[pair:${code}] READY`);
-  });
-
-  client.on("authenticated", () => {
-    const p = pairings.get(code);
-    if (p) p.status = "authenticated";
-    console.log(`[pair:${code}] AUTHENTICATED`);
-  });
-
-  client.on("auth_failure", (msg) => {
-    const p = pairings.get(code);
-    if (p) {
-      p.status = "failed";
-      p.lastError = msg;
-    }
-    console.error(`[pair:${code}] AUTH FAILURE`, msg);
-  });
-
-  client.on("disconnected", (reason) => {
-    const p = pairings.get(code);
-    if (p) {
-      p.status = "disconnected";
-      p.lastError = reason;
-    }
-    console.warn(`[pair:${code}] DISCONNECTED`, reason);
-  });
-
-  client.initialize().catch((err) => {
-    const p = pairings.get(code);
-    if (p) {
-      p.status = "failed";
-      p.lastError = err.message;
-    }
-    console.error("INIT ERROR:", err);
-  });
-
-  return client;
-}
-
-/* =========================
-   ROUTES
-========================= */
-
-app.get("/pair", (req, res) => {
-  const code = generatePairCode();
-  makeClientForCode(code);
-
-  res.json({
-    code,
-    qr_url: `/pair/${code}/qr`,
-    status_url: `/pair/${code}/status`,
-  });
-});
-
-app.get("/pair/:code/qr", (req, res) => {
-  const p = pairings.get(req.params.code);
-  if (!p) return res.status(404).json({ error: "Invalid code" });
-  if (!p.qrDataUrl) return res.status(202).json({ status: p.status });
-
-  const base64 = p.qrDataUrl.split(",")[1];
-  const buffer = Buffer.from(base64, "base64");
-
-  res.set("Content-Type", "image/png");
-  res.set("Cache-Control", "no-store");
-  res.send(buffer);
-});
-
-app.get("/pair/:code/status", (req, res) => {
-  const p = pairings.get(req.params.code);
-  if (!p) return res.status(404).json({ error: "Invalid code" });
-
-  res.json({
-    status: p.status,
-    createdAt: new Date(p.createdAt).toISOString(),
-    lastError: p.lastError,
-  });
+  }
+  
+  res.json({ ResultCode: 0, ResultDesc: "Success" });
 });
 
 /* =========================
@@ -154,19 +196,23 @@ app.get("/pair/:code/status", (req, res) => {
 ========================= */
 
 app.get("/", (_, res) => {
-  const file = path.join(STATIC_DIR, "link.html");
-  fs.existsSync(file) ? res.sendFile(file) : res.send("OK");
+  res.sendFile(path.join(STATIC_DIR, "link.html"));
 });
 
 app.get("/admin", (_, res) => {
-  const file = path.join(STATIC_DIR, "admin.html");
-  fs.existsSync(file) ? res.sendFile(file) : res.send("Admin OK");
+  res.sendFile(path.join(STATIC_DIR, "admin.html"));
+});
+
+app.get("/login", (_, res) => {
+  res.sendFile(path.join(STATIC_DIR, "login.html"));
 });
 
 app.get("/health", (_, res) => {
-  res.json({ status: "ok", time: Date.now() });
+  res.json({ status: "ok", uptime: process.uptime(), time: Date.now() });
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🚀 SCHOLAR MD Server running on port ${PORT}`);
 });
+
+export default app;
