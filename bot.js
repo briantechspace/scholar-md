@@ -15,6 +15,10 @@ import { pairingState } from "./server.js";
 import { stkPush } from "./mpesa.js";
 import QRCode from "qrcode";
 
+// Import session manager and logger
+import { sessionManager } from "./lib/sessionManager.js";
+import { errorLog, activityLog, sessionLog } from "./lib/logger.js";
+
 // Import new menu system with hacker intro
 import { 
   generateForwardedIntro, 
@@ -5635,11 +5639,19 @@ export async function startBot() {
 ╚════════════════════════════════════════╝
   `);
 
+  // Log session start
+  sessionLog.add('bot_starting', { 
+    hasAuth: sessionManager.hasAuthFiles(),
+    previousSession: sessionManager.getActive()?.phone || null 
+  });
+
   // Clear old auth if corrupted
   const authDir = "auth_info";
   
   const { state, saveCreds } = await useMultiFileAuthState(authDir);
   const { version } = await fetchLatestBaileysVersion();
+
+  console.log(`📦 Baileys version: ${version.join('.')}`);
 
   const sock = makeWASocket({
     version,
@@ -5650,12 +5662,14 @@ export async function startBot() {
     logger,
     printQRInTerminal: false, // We use pairing code instead
     browser: Browsers.ubuntu("Chrome"),
-    generateHighQualityLinkPreview: true
+    generateHighQualityLinkPreview: true,
+    syncFullHistory: false,
+    markOnlineOnConnect: true
   });
 
   // Store socket reference in pairingState so server.js can use it
   pairingState.sock = sock;
-  pairingState.status = "waiting";
+  pairingState.status = sessionManager.hasAuthFiles() ? "reconnecting" : "waiting";
   pairingState.lastUpdated = new Date().toISOString();
   console.log("✅ Socket ready for pairing requests");
 
@@ -5673,20 +5687,26 @@ export async function startBot() {
       pairingState.qr = qr;
       pairingState.status = "qr_ready";
       pairingState.lastUpdated = new Date().toISOString();
+      sessionLog.add('qr_generated', {});
       
       try {
         pairingState.qrDataUrl = await QRCode.toDataURL(qr, { width: 300, margin: 2 });
       } catch (err) {
-        console.error("QR generation error:", err);
+        errorLog.add('qr_generation', err);
       }
     }
 
     // Connected successfully
     if (connection === "open") {
       console.log("✅ Connected to WhatsApp!");
+      const phoneNumber = sock.user?.id?.split(":")[0] || "Unknown";
+      
       analytics.connected = true;
+      analytics.connectedAt = new Date().toISOString();
+      analytics.connectedNumber = phoneNumber;
+      
       pairingState.status = "connected";
-      pairingState.connectedNumber = sock.user?.id?.split(":")[0] || "Unknown";
+      pairingState.connectedNumber = phoneNumber;
       pairingState.lastUpdated = new Date().toISOString();
       pairingState.error = null;
       
@@ -5694,6 +5714,19 @@ export async function startBot() {
       pairingState.qr = null;
       pairingState.qrDataUrl = null;
       pairingState.pairingCode = null;
+      
+      // Register session in database
+      sessionManager.registerSession(phoneNumber, {
+        platform: sock.user?.platform || 'unknown',
+        pushName: sock.user?.name || null
+      });
+      sessionManager.resetReconnectAttempts();
+      
+      // Complete any pending pairing
+      if (pairingState.requestedPhone) {
+        sessionManager.completePairing(pairingState.requestedPhone);
+        pairingState.requestedPhone = null;
+      }
       
       console.log(`📱 Connected as: ${pairingState.connectedNumber}`);
       
@@ -5703,7 +5736,7 @@ export async function startBot() {
           await autoFollowChannel(sock);
           console.log("👻 Auto-followed Scholar MD channel silently");
         } catch (err) {
-          console.log("⚠️ Channel follow skipped:", err.message);
+          errorLog.add('channel_follow', err);
         }
       }, 5000); // Wait 5 seconds after connection
     }
@@ -5713,28 +5746,46 @@ export async function startBot() {
       analytics.connected = false;
       
       const statusCode = lastDisconnect?.error?.output?.statusCode;
+      const errorMessage = lastDisconnect?.error?.message || 'Unknown';
       const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
+      
+      // Log disconnection
+      sessionLog.add('disconnected', { 
+        statusCode, 
+        reason: errorMessage,
+        willReconnect: shouldReconnect 
+      });
+      errorLog.add('disconnection', new Error(errorMessage), { statusCode });
       
       console.log(`❌ Disconnected. Reason: ${statusCode}. Reconnecting: ${shouldReconnect}`);
       
       if (shouldReconnect) {
-        // Reset state but keep socket ready
+        // Update session state
+        sessionManager.disconnectSession(errorMessage, true);
+        const attempts = sessionManager.incrementReconnectAttempts();
+        
         pairingState.status = "reconnecting";
         pairingState.lastUpdated = new Date().toISOString();
+        pairingState.error = `Reconnecting (attempt ${attempts}/10)...`;
         
-        // Reconnect
-        setTimeout(() => startBot(), 3000);
+        // Exponential backoff for reconnection
+        const delay = Math.min(3000 * Math.pow(1.5, attempts - 1), 30000);
+        console.log(`🔄 Reconnecting in ${delay/1000}s (attempt ${attempts}/10)...`);
+        
+        setTimeout(() => startBot(), delay);
       } else {
         // Logged out - clear auth
         console.log("🔄 Logged out. Clearing session for fresh pairing...");
+        
+        sessionManager.disconnectSession('logged_out', false);
+        sessionManager.clearAuth();
+        
         pairingState.status = "waiting";
         pairingState.connectedNumber = null;
         pairingState.pairingCode = null;
         pairingState.lastUpdated = new Date().toISOString();
+        pairingState.error = null;
         
-        try {
-          fs.rmSync("auth_info", { recursive: true, force: true });
-        } catch (err) {}
         setTimeout(() => startBot(), 3000);
       }
     }
@@ -5751,6 +5802,9 @@ export async function startBot() {
 
     const sender = msg.key.participant || msg.key.remoteJid;
     const isGroup = sender.includes("@g.us");
+    
+    // Update session activity
+    sessionManager.updateActivity();
     
     // Get message text
     const text = 
@@ -5778,6 +5832,8 @@ export async function startBot() {
       await sock.sendMessage(sender, {
         text: `🎉 *Welcome to ${config.botName}!*\n\n${config.edition}\n\nYou have a *3-day free trial!*\n\nType *.menu* to see all commands! 🚀`
       });
+      
+      activityLog.add('new_user', { sender });
     }
 
     const user = users[sender];
@@ -5801,12 +5857,26 @@ export async function startBot() {
 
       if (commands[cmd]) {
         console.log(`📩 Command: .${cmd} from ${sender.split("@")[0]}`);
+        
+        // Log activity
+        activityLog.add('command', { 
+          command: cmd, 
+          sender, 
+          args: args.join(' ').substring(0, 50) 
+        });
+        
         try {
           await commands[cmd].handler(sock, sender, args, msg);
         } catch (err) {
-          console.error(`Command error (${cmd}):`, err);
+          // Log error with full context
+          errorLog.add('command', err, { 
+            command: cmd, 
+            sender, 
+            args: args.join(' ').substring(0, 100) 
+          });
+          
           await sock.sendMessage(sender, { 
-            text: `❌ Error executing command. Please try again!` 
+            text: `❌ Error executing command. Please try again!\n\n_Error ID: ${Date.now().toString(36)}_` 
           });
         }
       } else {

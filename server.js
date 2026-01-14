@@ -73,7 +73,8 @@ app.get("/api/status", async (req, res) => {
     pairingCode: pairingState.pairingCode,
     connectedNumber: pairingState.connectedNumber,
     lastUpdated: pairingState.lastUpdated,
-    error: pairingState.error
+    error: pairingState.error,
+    hasAuthFiles: pairingState.sock ? true : false
   });
 });
 
@@ -101,8 +102,14 @@ app.post("/api/pair", async (req, res) => {
   
   console.log(`📱 Pairing requested for: ${cleanPhone}`);
   
+  // Log pairing request
+  if (pairingLog) {
+    pairingLog.add(cleanPhone, 'requested');
+  }
+  
   // Check if bot socket is available
   if (!pairingState.sock) {
+    if (pairingLog) pairingLog.updateStatus(cleanPhone, 'failed', { reason: 'socket_not_ready' });
     return res.status(503).json({ 
       success: false, 
       message: "Bot is starting up. Please wait a moment and try again." 
@@ -111,9 +118,10 @@ app.post("/api/pair", async (req, res) => {
   
   // Check if already connected
   if (pairingState.status === "connected") {
+    if (pairingLog) pairingLog.updateStatus(cleanPhone, 'failed', { reason: 'already_connected' });
     return res.status(400).json({ 
       success: false, 
-      message: "Bot is already connected to a device. Disconnect first to pair a new device." 
+      message: "Bot is already connected to a device. Go to /api/session/clear to disconnect first." 
     });
   }
   
@@ -132,6 +140,11 @@ app.post("/api/pair", async (req, res) => {
     pairingState.lastUpdated = new Date().toISOString();
     pairingState.error = null;
     
+    // Log to session manager
+    if (sessionManager) {
+      sessionManager.addPendingPairing(cleanPhone, formattedCode);
+    }
+    
     console.log(`✅ Pairing code generated: ${formattedCode} for ${cleanPhone}`);
     
     res.json({ 
@@ -143,6 +156,10 @@ app.post("/api/pair", async (req, res) => {
     
   } catch (error) {
     console.error(`❌ Pairing code generation failed:`, error.message);
+    
+    // Log error
+    if (errorLog) errorLog.add('pairing', error, { phone: cleanPhone });
+    if (pairingLog) pairingLog.updateStatus(cleanPhone, 'failed', { reason: error.message });
     
     pairingState.error = error.message;
     pairingState.status = "error";
@@ -283,6 +300,134 @@ app.post("/api/mpesa/callback", (req, res) => {
   }
   
   res.json({ ResultCode: 0, ResultDesc: "Success" });
+});
+
+/* =========================
+   SESSION & LOGS API
+========================= */
+
+// Import session manager and logger
+let sessionManager, errorLog, activityLog, sessionLog, pairingLog;
+try {
+  const sm = await import('./lib/sessionManager.js');
+  sessionManager = sm.sessionManager;
+  const logger = await import('./lib/logger.js');
+  errorLog = logger.errorLog;
+  activityLog = logger.activityLog;
+  sessionLog = logger.sessionLog;
+  pairingLog = logger.pairingLog;
+} catch (e) {
+  console.log('⚠️ Session/Logger modules not yet loaded');
+}
+
+// Get session info
+app.get("/api/session", (req, res) => {
+  if (!sessionManager) {
+    return res.json({ error: 'Session manager not loaded' });
+  }
+  res.json(sessionManager.getStats());
+});
+
+// Get session history
+app.get("/api/session/history", (req, res) => {
+  if (!sessionManager) {
+    return res.json([]);
+  }
+  const limit = parseInt(req.query.limit) || 20;
+  res.json(sessionManager.getHistory(limit));
+});
+
+// Clear session (logout)
+app.post("/api/session/clear", (req, res) => {
+  if (!sessionManager) {
+    return res.status(500).json({ error: 'Session manager not loaded' });
+  }
+  sessionManager.clearAuth();
+  pairingState.status = 'waiting';
+  pairingState.connectedNumber = null;
+  res.json({ success: true, message: 'Session cleared. Ready for new pairing.' });
+});
+
+// Get error logs
+app.get("/api/logs/errors", (req, res) => {
+  if (!errorLog) {
+    return res.json([]);
+  }
+  const limit = parseInt(req.query.limit) || 50;
+  const source = req.query.source || null;
+  res.json(errorLog.getRecent(limit, source));
+});
+
+// Get error stats
+app.get("/api/logs/errors/stats", (req, res) => {
+  if (!errorLog) {
+    return res.json({ total: 0 });
+  }
+  res.json(errorLog.getStats());
+});
+
+// Get activity logs
+app.get("/api/logs/activity", (req, res) => {
+  if (!activityLog) {
+    return res.json([]);
+  }
+  const limit = parseInt(req.query.limit) || 100;
+  const type = req.query.type || null;
+  res.json(activityLog.getRecent(limit, type));
+});
+
+// Get command stats
+app.get("/api/logs/commands/stats", (req, res) => {
+  if (!activityLog) {
+    return res.json({ total: 0, byCommand: [] });
+  }
+  res.json(activityLog.getCommandStats());
+});
+
+// Get session logs
+app.get("/api/logs/sessions", (req, res) => {
+  if (!sessionLog) {
+    return res.json([]);
+  }
+  const limit = parseInt(req.query.limit) || 50;
+  res.json(sessionLog.getRecent(limit));
+});
+
+// Get pairing logs
+app.get("/api/logs/pairing", (req, res) => {
+  if (!pairingLog) {
+    return res.json([]);
+  }
+  const limit = parseInt(req.query.limit) || 50;
+  res.json(pairingLog.getRecent(limit));
+});
+
+// Get pairing stats
+app.get("/api/logs/pairing/stats", (req, res) => {
+  if (!pairingLog) {
+    return res.json({ total: 0 });
+  }
+  res.json(pairingLog.getStats());
+});
+
+// Clear logs
+app.post("/api/logs/clear", (req, res) => {
+  const { type } = req.body;
+  try {
+    if (type === 'errors' && errorLog) errorLog.clear();
+    else if (type === 'activity' && activityLog) activityLog.clear();
+    else if (type === 'sessions' && sessionLog) sessionLog.clear();
+    else if (type === 'pairing' && pairingLog) pairingLog.clear();
+    else if (type === 'all') {
+      if (errorLog) errorLog.clear();
+      if (activityLog) activityLog.clear();
+      if (sessionLog) sessionLog.clear();
+      if (pairingLog) pairingLog.clear();
+    }
+    res.json({ success: true, message: `${type} logs cleared` });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 /* =========================
