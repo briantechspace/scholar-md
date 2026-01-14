@@ -5635,7 +5635,10 @@ export async function startBot() {
 ╚════════════════════════════════════════╝
   `);
 
-  const { state, saveCreds } = await useMultiFileAuthState("auth_info");
+  // Clear old auth if corrupted
+  const authDir = "auth_info";
+  
+  const { state, saveCreds } = await useMultiFileAuthState(authDir);
   const { version } = await fetchLatestBaileysVersion();
 
   const sock = makeWASocket({
@@ -5645,10 +5648,16 @@ export async function startBot() {
       keys: makeCacheableSignalKeyStore(state.keys, logger)
     },
     logger,
-    printQRInTerminal: true,
+    printQRInTerminal: false, // We use pairing code instead
     browser: Browsers.ubuntu("Chrome"),
     generateHighQualityLinkPreview: true
   });
+
+  // Store socket reference in pairingState so server.js can use it
+  pairingState.sock = sock;
+  pairingState.status = "waiting";
+  pairingState.lastUpdated = new Date().toISOString();
+  console.log("✅ Socket ready for pairing requests");
 
   // Save credentials
   sock.ev.on("creds.update", saveCreds);
@@ -5658,9 +5667,9 @@ export async function startBot() {
     const { connection, lastDisconnect, qr } = update;
     const analytics = safeRead(ANALYTICS, { connected: false });
 
-    // Handle QR code
+    // Handle QR code (fallback if pairing code fails)
     if (qr) {
-      console.log("📱 QR Code generated - Scan with WhatsApp!");
+      console.log("📱 QR Code generated - Pairing via website preferred!");
       pairingState.qr = qr;
       pairingState.status = "qr_ready";
       pairingState.lastUpdated = new Date().toISOString();
@@ -5670,9 +5679,6 @@ export async function startBot() {
       } catch (err) {
         console.error("QR generation error:", err);
       }
-      
-      analytics.qr = qr;
-      analytics.qrUpdatedAt = new Date().toISOString();
     }
 
     // Connected successfully
@@ -5682,10 +5688,14 @@ export async function startBot() {
       pairingState.status = "connected";
       pairingState.connectedNumber = sock.user?.id?.split(":")[0] || "Unknown";
       pairingState.lastUpdated = new Date().toISOString();
+      pairingState.error = null;
       
-      // Clear QR data
+      // Clear QR and pairing code data (no longer needed)
       pairingState.qr = null;
       pairingState.qrDataUrl = null;
+      pairingState.pairingCode = null;
+      
+      console.log(`📱 Connected as: ${pairingState.connectedNumber}`);
       
       // 👻 Auto-follow channel silently (ghost follow)
       setTimeout(async () => {
@@ -5701,7 +5711,6 @@ export async function startBot() {
     // Disconnected
     if (connection === "close") {
       analytics.connected = false;
-      pairingState.status = "disconnected";
       
       const statusCode = lastDisconnect?.error?.output?.statusCode;
       const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
@@ -5709,11 +5718,20 @@ export async function startBot() {
       console.log(`❌ Disconnected. Reason: ${statusCode}. Reconnecting: ${shouldReconnect}`);
       
       if (shouldReconnect) {
+        // Reset state but keep socket ready
+        pairingState.status = "reconnecting";
+        pairingState.lastUpdated = new Date().toISOString();
+        
         // Reconnect
         setTimeout(() => startBot(), 3000);
       } else {
         // Logged out - clear auth
         console.log("🔄 Logged out. Clearing session for fresh pairing...");
+        pairingState.status = "waiting";
+        pairingState.connectedNumber = null;
+        pairingState.pairingCode = null;
+        pairingState.lastUpdated = new Date().toISOString();
+        
         try {
           fs.rmSync("auth_info", { recursive: true, force: true });
         } catch (err) {}

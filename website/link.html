@@ -9,6 +9,11 @@
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body class="gradient-bg min-h-screen">
+  <!-- Bot Status Banner -->
+  <div id="statusBanner" class="fixed top-0 left-0 right-0 z-[60] py-2 px-4 text-center text-sm hidden">
+    <span id="statusText"></span>
+  </div>
+
   <!-- Navigation -->
   <nav class="fixed w-full z-50 glass-effect">
     <div class="container mx-auto px-6 py-4">
@@ -269,16 +274,14 @@
 
         const data = await response.json();
         
-        if (data.success) {
+        if (data.success && data.code) {
           showSuccess(data.code);
         } else {
-          showError(data.message || 'Failed to generate pairing code');
+          showError(data.message || 'Failed to generate pairing code. Please try again.');
         }
       } catch (error) {
-        // For demo, generate a fake code
-        const fakeCode = Math.random().toString(36).substring(2, 6).toUpperCase() + '-' + 
-                        Math.random().toString(36).substring(2, 6).toUpperCase();
-        showSuccess(fakeCode);
+        console.error('Pairing error:', error);
+        showError('Connection error. Make sure the bot is running and try again.');
       }
     });
 
@@ -383,6 +386,47 @@
         setTimeout(() => toast.remove(), 300);
       }, 3000);
     }
+
+    // Check bot status on page load
+    async function checkBotStatus() {
+      const banner = document.getElementById('statusBanner');
+      const statusText = document.getElementById('statusText');
+      const pairBtn = document.getElementById('pairBtn');
+      
+      try {
+        const response = await fetch('/api/status');
+        const data = await response.json();
+        
+        if (data.status === 'connected') {
+          banner.className = 'fixed top-0 left-0 right-0 z-[60] py-2 px-4 text-center text-sm bg-green-500 text-white';
+          statusText.innerHTML = '<i class="fas fa-check-circle mr-2"></i>Bot is online and connected!';
+          banner.classList.remove('hidden');
+          pairBtn.disabled = true;
+          pairBtn.innerHTML = '<i class="fas fa-check mr-2"></i>Already Connected';
+          pairBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        } else if (data.status === 'waiting' || data.status === 'qr_ready') {
+          banner.className = 'fixed top-0 left-0 right-0 z-[60] py-2 px-4 text-center text-sm bg-blue-500 text-white';
+          statusText.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-2"></i>Bot is ready for pairing';
+          banner.classList.remove('hidden');
+          pairBtn.disabled = false;
+          setTimeout(() => banner.classList.add('hidden'), 5000);
+        } else if (data.status === 'reconnecting') {
+          banner.className = 'fixed top-0 left-0 right-0 z-[60] py-2 px-4 text-center text-sm bg-yellow-500 text-black';
+          statusText.innerHTML = '<i class="fas fa-sync fa-spin mr-2"></i>Bot is reconnecting...';
+          banner.classList.remove('hidden');
+        }
+      } catch (error) {
+        banner.className = 'fixed top-0 left-0 right-0 z-[60] py-2 px-4 text-center text-sm bg-red-500 text-white';
+        statusText.innerHTML = '<i class="fas fa-exclamation-triangle mr-2"></i>Cannot connect to server. Is the bot running?';
+        banner.classList.remove('hidden');
+      }
+    }
+    
+    // Check status on page load
+    checkBotStatus();
+    
+    // Refresh status every 30 seconds
+    setInterval(checkBotStatus, 30000);
   </script>
 </body>
 </html>

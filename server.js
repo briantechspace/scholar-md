@@ -49,11 +49,14 @@ export const pairingState = {
   qr: null,
   qrDataUrl: null,
   pairingCode: null,
-  status: "disconnected",
+  status: "waiting",
   connectedNumber: null,
   lastUpdated: null,
   requestedPhone: null,
-  pairingRequested: false
+  pairingRequested: false,
+  sock: null, // Store socket reference
+  codeGeneratedAt: null,
+  error: null
 };
 
 /* =========================
@@ -69,11 +72,105 @@ app.get("/api/status", async (req, res) => {
     qrDataUrl: pairingState.qrDataUrl,
     pairingCode: pairingState.pairingCode,
     connectedNumber: pairingState.connectedNumber,
-    lastUpdated: pairingState.lastUpdated
+    lastUpdated: pairingState.lastUpdated,
+    error: pairingState.error
   });
 });
 
-// Request pairing code for a phone number
+// Main pairing endpoint - Generate pairing code for phone number
+app.post("/api/pair", async (req, res) => {
+  const { phoneNumber, phone } = req.body;
+  const phoneNum = phoneNumber || phone;
+  
+  if (!phoneNum) {
+    return res.status(400).json({ 
+      success: false, 
+      message: "Phone number required" 
+    });
+  }
+  
+  // Clean phone number - remove all non-digits
+  const cleanPhone = phoneNum.toString().replace(/[^0-9]/g, "");
+  
+  if (cleanPhone.length < 10) {
+    return res.status(400).json({ 
+      success: false, 
+      message: "Invalid phone number. Must be at least 10 digits." 
+    });
+  }
+  
+  console.log(`📱 Pairing requested for: ${cleanPhone}`);
+  
+  // Check if bot socket is available
+  if (!pairingState.sock) {
+    return res.status(503).json({ 
+      success: false, 
+      message: "Bot is starting up. Please wait a moment and try again." 
+    });
+  }
+  
+  // Check if already connected
+  if (pairingState.status === "connected") {
+    return res.status(400).json({ 
+      success: false, 
+      message: "Bot is already connected to a device. Disconnect first to pair a new device." 
+    });
+  }
+  
+  try {
+    // Request pairing code from WhatsApp
+    const code = await pairingState.sock.requestPairingCode(cleanPhone);
+    
+    // Format code as XXXX-XXXX for display
+    const formattedCode = code.match(/.{1,4}/g)?.join("-") || code;
+    
+    // Update pairing state
+    pairingState.pairingCode = formattedCode;
+    pairingState.requestedPhone = cleanPhone;
+    pairingState.status = "code_ready";
+    pairingState.codeGeneratedAt = new Date().toISOString();
+    pairingState.lastUpdated = new Date().toISOString();
+    pairingState.error = null;
+    
+    console.log(`✅ Pairing code generated: ${formattedCode} for ${cleanPhone}`);
+    
+    res.json({ 
+      success: true, 
+      code: formattedCode,
+      message: "Enter this code in WhatsApp to pair",
+      expiresIn: 60
+    });
+    
+  } catch (error) {
+    console.error(`❌ Pairing code generation failed:`, error.message);
+    
+    pairingState.error = error.message;
+    pairingState.status = "error";
+    pairingState.lastUpdated = new Date().toISOString();
+    
+    // Handle specific errors
+    if (error.message.includes("already paired") || error.message.includes("already connected")) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "This device is already connected. Disconnect first to re-pair." 
+      });
+    }
+    
+    if (error.message.includes("invalid") || error.message.includes("not registered")) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "This phone number is not registered on WhatsApp." 
+      });
+    }
+    
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to generate pairing code. Please try again." 
+    });
+  }
+});
+
+// Legacy endpoint for backwards compatibility
 app.post("/api/pair/request", async (req, res) => {
   const { phone } = req.body;
   
@@ -81,23 +178,9 @@ app.post("/api/pair/request", async (req, res) => {
     return res.status(400).json({ error: "Phone number required" });
   }
   
-  // Clean phone number
-  const cleanPhone = phone.replace(/[^0-9]/g, "");
-  
-  if (cleanPhone.length < 10) {
-    return res.status(400).json({ error: "Invalid phone number" });
-  }
-  
-  // Store request - bot.js will handle actual pairing
-  pairingState.requestedPhone = cleanPhone;
-  pairingState.pairingRequested = true;
-  pairingState.lastUpdated = new Date().toISOString();
-  
-  res.json({ 
-    success: true, 
-    message: "Pairing initiated. Check status for QR or pairing code.",
-    phone: cleanPhone
-  });
+  // Redirect to main pair endpoint
+  req.body.phoneNumber = phone;
+  return app._router.handle(Object.assign(req, { url: '/api/pair', method: 'POST' }), res);
 });
 
 // Get QR as image
