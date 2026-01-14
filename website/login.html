@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Login - Scholar MD</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .login-container {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #0f3460 100%);
+    }
+    .login-card {
+      background: rgba(26, 26, 46, 0.95);
+      border: 1px solid #0f3460;
+      border-radius: 20px;
+      padding: 40px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+    .login-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .login-header h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+    }
+    .login-header p {
+      color: #8892b0;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: #8892b0;
+      font-size: 0.9rem;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 14px 18px;
+      background: #0a0a0a;
+      border: 2px solid #0f3460;
+      border-radius: 10px;
+      color: #fff;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      box-sizing: border-box;
+    }
+    .form-group input:focus {
+      outline: none;
+      border-color: #00ff88;
+      box-shadow: 0 0 20px rgba(0, 255, 136, 0.2);
+    }
+    .login-btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #00ff88 0%, #00cc6a 100%);
+      border: none;
+      border-radius: 10px;
+      color: #0a0a0a;
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .login-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(0, 255, 136, 0.3);
+    }
+    .login-btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .error-msg {
+      background: rgba(255, 107, 107, 0.2);
+      border: 1px solid #ff6b6b;
+      border-radius: 8px;
+      padding: 12px;
+      color: #ff6b6b;
+      margin-bottom: 20px;
+      display: none;
+    }
+    .security-note {
+      margin-top: 20px;
+      padding: 15px;
+      background: rgba(0, 255, 136, 0.1);
+      border-radius: 8px;
+      font-size: 0.85rem;
+      color: #8892b0;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-card">
+      <div class="login-header">
+        <h1>🎓</h1>
+        <h2>Scholar MD</h2>
+        <p>Admin Dashboard Login</p>
+      </div>
+
+      <div class="error-msg" id="error-msg"></div>
+
+      <form id="login-form">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input type="text" id="username" name="username" placeholder="Enter admin username" required autocomplete="username">
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" placeholder="Enter password" required autocomplete="current-password">
+        </div>
+
+        <button type="submit" class="login-btn" id="login-btn">
+          🔐 Login to Dashboard
+        </button>
+      </form>
+
+      <div class="security-note">
+        🔒 Secure admin access • All sessions are monitored
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('login-form');
+    const errorMsg = document.getElementById('error-msg');
+    const loginBtn = document.getElementById('login-btn');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      
+      loginBtn.disabled = true;
+      loginBtn.textContent = '⏳ Authenticating...';
+      errorMsg.style.display = 'none';
+
+      try {
+        const res = await fetch('/api/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          loginBtn.textContent = '✅ Success! Redirecting...';
+          localStorage.setItem('adminToken', data.token);
+          setTimeout(() => {
+            window.location.href = '/admin';
+          }, 1000);
+        } else {
+          throw new Error(data.error || 'Login failed');
+        }
+      } catch (error) {
+        errorMsg.textContent = '❌ ' + error.message;
+        errorMsg.style.display = 'block';
+        loginBtn.disabled = false;
+        loginBtn.textContent = '🔐 Login to Dashboard';
+      }
+    });
+  </script>
+</body>
+</html>

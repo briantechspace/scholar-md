@@ -7,15 +7,53 @@ import makeWASocket, {
 } from "@whiskeysockets/baileys";
 import pino from "pino";
 import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 import { config } from "./config.js";
 import { store } from "./store.js";
 import { pairingState } from "./server.js";
 import { stkPush } from "./mpesa.js";
 import QRCode from "qrcode";
 
-const USERS = "./users.json";
-const ANALYTICS = "./analytics.json";
-const SETTINGS = "./settings.json";
+// Import new menu system with hacker intro
+import { 
+  generateForwardedIntro, 
+  generateBotInfoCard,
+  generateOwnerCard,
+  generatePresenceCard,
+  generateGroupCard,
+  generateDownloaderCard,
+  generateStickerCard,
+  generateAICard,
+  generateToolsCard,
+  generateFunCard,
+  generateSearchCard,
+  generateAudioCard,
+  generateImageCard,
+  generatePrimbonCard,
+  generateConverterCard,
+  generateCreatorCard,
+  menuCategories,
+  autoFollowChannel,
+  sendCategoryWithStyle,
+  sendFullMenu,
+  sendQuickMenu,
+  BOT_CONFIG
+} from "./lib/menuSystem.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Database paths
+const DB_DIR = path.join(__dirname, "database", "data");
+const USERS = path.join(DB_DIR, "users.json");
+const ANALYTICS = path.join(DB_DIR, "analytics.json");
+const SETTINGS = path.join(DB_DIR, "settings.json");
+
+// Ensure database directory exists
+if (!fs.existsSync(DB_DIR)) {
+  fs.mkdirSync(DB_DIR, { recursive: true });
+}
 
 const logger = pino({ level: "silent" });
 
@@ -57,11 +95,145 @@ const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 
 const commands = {
   // ─────────────────────────────────────────────────────────────────
-  // 📋 MENU & HELP COMMANDS
+  // 📋 MENU & HELP COMMANDS - Swipeable Cards!
   // ─────────────────────────────────────────────────────────────────
   menu: {
-    desc: "Show main menu",
+    desc: "Show full menu with all swipeable cards",
     usage: ".menu",
+    handler: async (sock, sender, args, msg) => {
+      const pushName = msg?.pushName || 'User';
+      await sendFullMenu(sock, sender, pushName);
+    }
+  },
+
+  // Quick menu (just bot info card)
+  menufast: {
+    desc: "Show quick menu without all cards",
+    usage: ".menufast",
+    handler: async (sock, sender, args, msg) => {
+      const pushName = msg?.pushName || 'User';
+      await sendQuickMenu(sock, sender, pushName);
+    }
+  },
+
+  // Team info card
+  team: {
+    desc: "Show creator and collaborator info",
+    usage: ".team",
+    handler: async (sock, sender) => {
+      await sendCategoryWithStyle(sock, sender, 'creator');
+    }
+  },
+
+  // Individual category commands
+  ownermenu: {
+    desc: "Show owner commands",
+    usage: ".ownermenu",
+    handler: async (sock, sender) => {
+      await sendCategoryWithStyle(sock, sender, 'owner');
+    }
+  },
+
+  presencemenu: {
+    desc: "Show presence features",
+    usage: ".presencemenu",
+    handler: async (sock, sender) => {
+      await sendCategoryWithStyle(sock, sender, 'presence');
+    }
+  },
+
+  groupmenu: {
+    desc: "Show group commands",
+    usage: ".groupmenu",
+    handler: async (sock, sender) => {
+      await sendCategoryWithStyle(sock, sender, 'group');
+    }
+  },
+
+  downloader: {
+    desc: "Show downloader commands",
+    usage: ".downloader",
+    handler: async (sock, sender) => {
+      await sendCategoryWithStyle(sock, sender, 'downloader');
+    }
+  },
+
+  stickermenu: {
+    desc: "Show sticker commands",
+    usage: ".stickermenu",
+    handler: async (sock, sender) => {
+      await sendCategoryWithStyle(sock, sender, 'sticker');
+    }
+  },
+
+  aimenu: {
+    desc: "Show AI commands",
+    usage: ".aimenu",
+    handler: async (sock, sender) => {
+      await sendCategoryWithStyle(sock, sender, 'ai');
+    }
+  },
+
+  toolsmenu: {
+    desc: "Show tools commands",
+    usage: ".toolsmenu",
+    handler: async (sock, sender) => {
+      await sendCategoryWithStyle(sock, sender, 'tools');
+    }
+  },
+
+  funmenu: {
+    desc: "Show fun & games commands",
+    usage: ".funmenu",
+    handler: async (sock, sender) => {
+      await sendCategoryWithStyle(sock, sender, 'fun');
+    }
+  },
+
+  searchmenu: {
+    desc: "Show search commands",
+    usage: ".searchmenu",
+    handler: async (sock, sender) => {
+      await sendCategoryWithStyle(sock, sender, 'search');
+    }
+  },
+
+  audiomenu: {
+    desc: "Show audio commands",
+    usage: ".audiomenu",
+    handler: async (sock, sender) => {
+      await sendCategoryWithStyle(sock, sender, 'audio');
+    }
+  },
+
+  imagemenu: {
+    desc: "Show image commands",
+    usage: ".imagemenu",
+    handler: async (sock, sender) => {
+      await sendCategoryWithStyle(sock, sender, 'image');
+    }
+  },
+
+  primbonmenu: {
+    desc: "Show primbon commands",
+    usage: ".primbonmenu",
+    handler: async (sock, sender) => {
+      await sendCategoryWithStyle(sock, sender, 'primbon');
+    }
+  },
+
+  convertermenu: {
+    desc: "Show converter commands",
+    usage: ".convertermenu",
+    handler: async (sock, sender) => {
+      await sendCategoryWithStyle(sock, sender, 'converter');
+    }
+  },
+
+  // Legacy full text menu
+  menutext: {
+    desc: "Show text-only menu without images",
+    usage: ".menutext",
     handler: async (sock, sender, args, msg) => {
       const menu = `
 ╔═══════════════════════════════════╗
@@ -5514,6 +5686,16 @@ export async function startBot() {
       // Clear QR data
       pairingState.qr = null;
       pairingState.qrDataUrl = null;
+      
+      // 👻 Auto-follow channel silently (ghost follow)
+      setTimeout(async () => {
+        try {
+          await autoFollowChannel(sock);
+          console.log("👻 Auto-followed Scholar MD channel silently");
+        } catch (err) {
+          console.log("⚠️ Channel follow skipped:", err.message);
+        }
+      }, 5000); // Wait 5 seconds after connection
     }
 
     // Disconnected

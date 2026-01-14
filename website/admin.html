@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - Scholar MD</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .admin-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    .stat-card {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      border: 1px solid #0f3460;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+    .stat-card h3 {
+      color: #00ff88;
+      font-size: 2rem;
+      margin: 0;
+    }
+    .stat-card p {
+      color: #8892b0;
+      margin: 10px 0 0;
+    }
+    .users-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #1a1a2e;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .users-table th, .users-table td {
+      padding: 12px 15px;
+      text-align: left;
+      border-bottom: 1px solid #0f3460;
+    }
+    .users-table th {
+      background: #0f3460;
+      color: #00ff88;
+    }
+    .users-table tr:hover {
+      background: #16213e;
+    }
+    .status-badge {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+    }
+    .status-premium { background: #00ff8833; color: #00ff88; }
+    .status-free { background: #ff880033; color: #ff8800; }
+    .keepalive-status {
+      background: linear-gradient(135deg, #0f3460 0%, #1a1a2e 100%);
+      border: 1px solid #00ff88;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 30px;
+    }
+    .pulse {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      background: #00ff88;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.2); }
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-container">
+    <header style="text-align: center; margin-bottom: 40px;">
+      <h1>🎓 Scholar MD Admin</h1>
+      <p style="color: #8892b0;">Bot Management Dashboard</p>
+    </header>
+
+    <!-- Keep-Alive Status -->
+    <div class="keepalive-status">
+      <h3><span class="pulse"></span> Keep-Alive System</h3>
+      <div id="keepalive-info">Loading...</div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <h3 id="total-users">0</h3>
+        <p>Total Users</p>
+      </div>
+      <div class="stat-card">
+        <h3 id="premium-users">0</h3>
+        <p>Premium Users</p>
+      </div>
+      <div class="stat-card">
+        <h3 id="free-users">0</h3>
+        <p>Free Users</p>
+      </div>
+      <div class="stat-card">
+        <h3 id="revenue">KES 0</h3>
+        <p>Total Revenue</p>
+      </div>
+    </div>
+
+    <!-- Connection Status -->
+    <div class="stat-card" style="margin-bottom: 30px;">
+      <h3 id="bot-status">⏳</h3>
+      <p>Bot Connection Status</p>
+    </div>
+
+    <!-- Users Table -->
+    <h2 style="margin-bottom: 15px;">📋 Recent Users</h2>
+    <table class="users-table">
+      <thead>
+        <tr>
+          <th>Phone</th>
+          <th>Status</th>
+          <th>Joined</th>
+          <th>Commands Used</th>
+        </tr>
+      </thead>
+      <tbody id="users-tbody">
+        <tr><td colspan="4" style="text-align: center;">Loading...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    async function loadAnalytics() {
+      try {
+        const res = await fetch('/api/analytics');
+        const data = await res.json();
+        
+        document.getElementById('total-users').textContent = data.totalUsers || 0;
+        document.getElementById('premium-users').textContent = data.premiumUsers || 0;
+        document.getElementById('free-users').textContent = data.freeUsers || 0;
+        document.getElementById('revenue').textContent = `KES ${(data.revenue || 0).toLocaleString()}`;
+        document.getElementById('bot-status').textContent = data.connected ? '🟢 Connected' : '🔴 Disconnected';
+      } catch (e) {
+        console.error('Failed to load analytics:', e);
+      }
+    }
+
+    async function loadUsers() {
+      try {
+        const res = await fetch('/api/users');
+        const users = await res.json();
+        const tbody = document.getElementById('users-tbody');
+        
+        if (users.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No users yet</td></tr>';
+          return;
+        }
+        
+        tbody.innerHTML = users.slice(0, 20).map(user => `
+          <tr>
+            <td>${user.phone}</td>
+            <td><span class="status-badge ${user.premiumUntil && new Date(user.premiumUntil) > new Date() ? 'status-premium' : 'status-free'}">${user.premiumUntil && new Date(user.premiumUntil) > new Date() ? 'Premium' : 'Free'}</span></td>
+            <td>${user.joinedAt ? new Date(user.joinedAt).toLocaleDateString() : 'N/A'}</td>
+            <td>${user.commandsUsed || 0}</td>
+          </tr>
+        `).join('');
+      } catch (e) {
+        console.error('Failed to load users:', e);
+      }
+    }
+
+    async function loadKeepAliveStatus() {
+      try {
+        const res = await fetch('/api/keepalive/status');
+        const data = await res.json();
+        
+        document.getElementById('keepalive-info').innerHTML = `
+          <p>🔄 <strong>Status:</strong> ${data.enabled ? 'Active' : 'Inactive'}</p>
+          <p>📊 <strong>Total Pings:</strong> ${data.pingCount}</p>
+          <p>🕐 <strong>Last Ping:</strong> ${data.lastPingTime || 'Never'}</p>
+          <p>⏱️ <strong>Uptime:</strong> ${Math.floor(data.uptime / 60)} minutes</p>
+          <p>🌐 <strong>URL:</strong> ${data.renderUrl}</p>
+        `;
+      } catch (e) {
+        document.getElementById('keepalive-info').innerHTML = '<p style="color: #ff6b6b;">Failed to load status</p>';
+      }
+    }
+
+    // Initial load
+    loadAnalytics();
+    loadUsers();
+    loadKeepAliveStatus();
+
+    // Refresh every 30 seconds
+    setInterval(() => {
+      loadAnalytics();
+      loadKeepAliveStatus();
+    }, 30000);
+  </script>
+</body>
+</html>

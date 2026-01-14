@@ -8,30 +8,41 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const PORT = process.env.PORT || 3000;
-const STATIC_DIR = path.resolve(__dirname, "public");
-const ANALYTICS = "./analytics.json";
-const USERS = "./users.json";
-const PAYMENTS = "./payments.json";
-const ADMINS = "./admins.json";
+const WEBSITE_DIR = path.resolve(__dirname, "website");
+const DATABASE_DIR = path.resolve(__dirname, "database", "data");
+
+// Ensure database directory exists
+if (!fs.existsSync(DATABASE_DIR)) {
+  fs.mkdirSync(DATABASE_DIR, { recursive: true });
+}
 
 const safeRead = (f, defaultValue = {}) => {
   try {
+    if (!fs.existsSync(f)) {
+      fs.writeFileSync(f, JSON.stringify(defaultValue, null, 2));
+      return defaultValue;
+    }
     const raw = fs.readFileSync(f, "utf8");
     return JSON.parse(raw || "{}");
   } catch (e) {
-    try {
-      fs.writeFileSync(f, JSON.stringify(defaultValue, null, 2));
-    } catch (writeErr) {}
     return defaultValue;
   }
 };
 
 const write = (f, d) => fs.writeFileSync(f, JSON.stringify(d, null, 2));
 
+// Database file paths
+const DB = {
+  analytics: path.join(DATABASE_DIR, "analytics.json"),
+  users: path.join(DATABASE_DIR, "users.json"),
+  payments: path.join(DATABASE_DIR, "payments.json"),
+  admins: path.join(DATABASE_DIR, "admins.json")
+};
+
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(STATIC_DIR));
+app.use(express.static(WEBSITE_DIR));
 
 // Store pairing state globally so bot.js can update it
 export const pairingState = {
@@ -51,7 +62,7 @@ export const pairingState = {
 
 // Get current connection status and QR
 app.get("/api/status", async (req, res) => {
-  const analytics = safeRead(ANALYTICS, { connected: false });
+  const analytics = safeRead(DB.analytics, { connected: false });
   
   res.json({
     status: analytics.connected ? "connected" : pairingState.status,
@@ -112,7 +123,7 @@ app.get("/api/qr", async (req, res) => {
 // Admin login
 app.post("/api/admin/login", (req, res) => {
   const { username, password } = req.body;
-  const admins = safeRead(ADMINS, { main: { username: "admin", passwordHash: "" } });
+  const admins = safeRead(DB.admins, { main: { username: "admin", passwordHash: "" } });
   
   // Simple check (in production use bcrypt.compare)
   if (username === admins.main?.username && password === "scholar2024") {
@@ -124,9 +135,9 @@ app.post("/api/admin/login", (req, res) => {
 
 // Get analytics/stats
 app.get("/api/analytics", (req, res) => {
-  const analytics = safeRead(ANALYTICS, {});
-  const users = safeRead(USERS, {});
-  const payments = safeRead(PAYMENTS, []);
+  const analytics = safeRead(DB.analytics, {});
+  const users = safeRead(DB.users, {});
+  const payments = safeRead(DB.payments, []);
   
   const userCount = Object.keys(users).length;
   const premiumUsers = Object.values(users).filter(u => 
@@ -145,7 +156,7 @@ app.get("/api/analytics", (req, res) => {
 
 // Get users list
 app.get("/api/users", (req, res) => {
-  const users = safeRead(USERS, {});
+  const users = safeRead(DB.users, {});
   const userList = Object.entries(users).map(([jid, data]) => ({
     jid,
     phone: jid.split("@")[0],
@@ -172,17 +183,17 @@ app.post("/api/mpesa/callback", (req, res) => {
         status: "success"
       };
       
-      const payments = safeRead(PAYMENTS, []);
+      const payments = safeRead(DB.payments, []);
       payments.push(payment);
-      write(PAYMENTS, payments);
+      write(DB.payments, payments);
       
       // Upgrade user to premium
       if (payment.phone) {
-        const users = safeRead(USERS, {});
+        const users = safeRead(DB.users, {});
         const userJid = `${payment.phone}@s.whatsapp.net`;
         if (users[userJid]) {
           users[userJid].premiumUntil = new Date(Date.now() + 30*24*60*60*1000).toISOString();
-          write(USERS, users);
+          write(DB.users, users);
         }
       }
     }
@@ -196,23 +207,77 @@ app.post("/api/mpesa/callback", (req, res) => {
 ========================= */
 
 app.get("/", (_, res) => {
-  res.sendFile(path.join(STATIC_DIR, "link.html"));
+  res.sendFile(path.join(WEBSITE_DIR, "index.html"));
 });
 
 app.get("/admin", (_, res) => {
-  res.sendFile(path.join(STATIC_DIR, "admin.html"));
+  res.sendFile(path.join(WEBSITE_DIR, "admin.html"));
 });
 
 app.get("/login", (_, res) => {
-  res.sendFile(path.join(STATIC_DIR, "login.html"));
+  res.sendFile(path.join(WEBSITE_DIR, "login.html"));
+});
+
+app.get("/link", (_, res) => {
+  res.sendFile(path.join(WEBSITE_DIR, "link.html"));
 });
 
 app.get("/health", (_, res) => {
   res.json({ status: "ok", uptime: process.uptime(), time: Date.now() });
 });
 
+/* =========================
+   KEEP-ALIVE SYSTEM
+   Prevents Render from sleeping due to inactivity
+========================= */
+const RENDER_URL = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+const PING_INTERVAL = 4 * 60 * 1000; // Ping every 4 minutes (Render sleeps after 15 min inactivity)
+
+let pingCount = 0;
+let lastPingTime = null;
+
+const keepAlive = async () => {
+  try {
+    const response = await fetch(`${RENDER_URL}/health`);
+    const data = await response.json();
+    pingCount++;
+    lastPingTime = new Date().toISOString();
+    console.log(`💓 Keep-alive ping #${pingCount} successful at ${lastPingTime}`);
+  } catch (error) {
+    console.error(`❌ Keep-alive ping failed:`, error.message);
+  }
+};
+
+// Start keep-alive pings after server starts
+const startKeepAlive = () => {
+  console.log(`🔄 Starting keep-alive system (pinging every ${PING_INTERVAL/1000}s)`);
+  setInterval(keepAlive, PING_INTERVAL);
+  // Initial ping after 30 seconds
+  setTimeout(keepAlive, 30000);
+};
+
+// Keep-alive status endpoint
+app.get("/api/keepalive/status", (_, res) => {
+  res.json({
+    enabled: true,
+    pingInterval: PING_INTERVAL,
+    pingCount,
+    lastPingTime,
+    uptime: process.uptime(),
+    renderUrl: RENDER_URL
+  });
+});
+
+// Manual ping endpoint
+app.get("/api/ping", async (_, res) => {
+  await keepAlive();
+  res.json({ success: true, pingCount, lastPingTime });
+});
+
 app.listen(PORT, () => {
   console.log(`🚀 SCHOLAR MD Server running on port ${PORT}`);
+  console.log(`🌐 URL: ${RENDER_URL}`);
+  startKeepAlive();
 });
 
 export default app;
