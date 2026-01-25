@@ -24,7 +24,7 @@ export default {
     levelSystem: true,
     economy: true,
     games: true,
-    premium: true
+    premium: false
   },
 
   // Limits
@@ -66,12 +66,6 @@ export default {
     spotify: {
       clientId: process.env.SPOTIFY_CLIENT_ID || '',
       clientSecret: process.env.SPOTIFY_CLIENT_SECRET || ''
-    },
-    mpesa: {
-      consumerKey: process.env.MPESA_CONSUMER_KEY || '',
-      consumerSecret: process.env.MPESA_CONSUMER_SECRET || '',
-      shortCode: process.env.MPESA_SHORTCODE || '',
-      passKey: process.env.MPESA_PASSKEY || ''
     }
   },
 

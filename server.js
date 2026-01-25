@@ -66,7 +66,7 @@ export const pairingState = {
 // Get current connection status and QR
 app.get("/api/status", async (req, res) => {
   const analytics = safeRead(DB.analytics, { connected: false });
-  
+
   res.json({
     status: analytics.connected ? "connected" : pairingState.status,
     qrDataUrl: pairingState.qrDataUrl,
@@ -82,56 +82,56 @@ app.get("/api/status", async (req, res) => {
 app.post("/api/pair", async (req, res) => {
   const { phoneNumber, phone } = req.body;
   const phoneNum = phoneNumber || phone;
-  
+
   if (!phoneNum) {
-    return res.status(400).json({ 
-      success: false, 
-      message: "Phone number required" 
+    return res.status(400).json({
+      success: false,
+      message: "Phone number required"
     });
   }
-  
+
   // Clean phone number - remove all non-digits
   const cleanPhone = phoneNum.toString().replace(/[^0-9]/g, "");
-  
+
   if (cleanPhone.length < 10) {
-    return res.status(400).json({ 
-      success: false, 
-      message: "Invalid phone number. Must be at least 10 digits." 
+    return res.status(400).json({
+      success: false,
+      message: "Invalid phone number. Must be at least 10 digits."
     });
   }
-  
+
   console.log(`📱 Pairing requested for: ${cleanPhone}`);
-  
+
   // Log pairing request
   if (pairingLog) {
     pairingLog.add(cleanPhone, 'requested');
   }
-  
+
   // Check if bot socket is available
   if (!pairingState.sock) {
     if (pairingLog) pairingLog.updateStatus(cleanPhone, 'failed', { reason: 'socket_not_ready' });
-    return res.status(503).json({ 
-      success: false, 
-      message: "Bot is starting up. Please wait a moment and try again." 
+    return res.status(503).json({
+      success: false,
+      message: "Bot is starting up. Please wait a moment and try again."
     });
   }
-  
+
   // Check if already connected
   if (pairingState.status === "connected") {
     if (pairingLog) pairingLog.updateStatus(cleanPhone, 'failed', { reason: 'already_connected' });
-    return res.status(400).json({ 
-      success: false, 
-      message: "Bot is already connected to a device. Go to /api/session/clear to disconnect first." 
+    return res.status(400).json({
+      success: false,
+      message: "Bot is already connected to a device. Go to /api/session/clear to disconnect first."
     });
   }
-  
+
   try {
     // Request pairing code from WhatsApp
     const code = await pairingState.sock.requestPairingCode(cleanPhone);
-    
+
     // Format code as XXXX-XXXX for display
     const formattedCode = code.match(/.{1,4}/g)?.join("-") || code;
-    
+
     // Update pairing state
     pairingState.pairingCode = formattedCode;
     pairingState.requestedPhone = cleanPhone;
@@ -139,50 +139,50 @@ app.post("/api/pair", async (req, res) => {
     pairingState.codeGeneratedAt = new Date().toISOString();
     pairingState.lastUpdated = new Date().toISOString();
     pairingState.error = null;
-    
+
     // Log to session manager
     if (sessionManager) {
       sessionManager.addPendingPairing(cleanPhone, formattedCode);
     }
-    
+
     console.log(`✅ Pairing code generated: ${formattedCode} for ${cleanPhone}`);
-    
-    res.json({ 
-      success: true, 
+
+    res.json({
+      success: true,
       code: formattedCode,
       message: "Enter this code in WhatsApp to pair",
       expiresIn: 60
     });
-    
+
   } catch (error) {
     console.error(`❌ Pairing code generation failed:`, error.message);
-    
+
     // Log error
     if (errorLog) errorLog.add('pairing', error, { phone: cleanPhone });
     if (pairingLog) pairingLog.updateStatus(cleanPhone, 'failed', { reason: error.message });
-    
+
     pairingState.error = error.message;
     pairingState.status = "error";
     pairingState.lastUpdated = new Date().toISOString();
-    
+
     // Handle specific errors
     if (error.message.includes("already paired") || error.message.includes("already connected")) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "This device is already connected. Disconnect first to re-pair." 
+      return res.status(400).json({
+        success: false,
+        message: "This device is already connected. Disconnect first to re-pair."
       });
     }
-    
+
     if (error.message.includes("invalid") || error.message.includes("not registered")) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "This phone number is not registered on WhatsApp." 
+      return res.status(400).json({
+        success: false,
+        message: "This phone number is not registered on WhatsApp."
       });
     }
-    
-    res.status(500).json({ 
-      success: false, 
-      message: "Failed to generate pairing code. Please try again." 
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to generate pairing code. Please try again."
     });
   }
 });
@@ -190,11 +190,11 @@ app.post("/api/pair", async (req, res) => {
 // Legacy endpoint for backwards compatibility
 app.post("/api/pair/request", async (req, res) => {
   const { phone } = req.body;
-  
+
   if (!phone) {
     return res.status(400).json({ error: "Phone number required" });
   }
-  
+
   // Redirect to main pair endpoint
   req.body.phoneNumber = phone;
   return app._router.handle(Object.assign(req, { url: '/api/pair', method: 'POST' }), res);
@@ -205,10 +205,10 @@ app.get("/api/qr", async (req, res) => {
   if (!pairingState.qr) {
     return res.status(404).json({ error: "No QR available" });
   }
-  
+
   try {
-    const buffer = await QRCode.toBuffer(pairingState.qr, { 
-      width: 300, 
+    const buffer = await QRCode.toBuffer(pairingState.qr, {
+      width: 300,
       margin: 2,
       color: { dark: "#000", light: "#fff" }
     });
@@ -224,7 +224,7 @@ app.get("/api/qr", async (req, res) => {
 app.post("/api/admin/login", (req, res) => {
   const { username, password } = req.body;
   const admins = safeRead(DB.admins, { main: { username: "admin", passwordHash: "" } });
-  
+
   // Simple check (in production use bcrypt.compare)
   if (username === admins.main?.username && password === "scholar2024") {
     res.json({ success: true, token: "admin-session-token" });
@@ -238,19 +238,19 @@ app.get("/api/analytics", (req, res) => {
   const analytics = safeRead(DB.analytics, {});
   const users = safeRead(DB.users, {});
   const payments = safeRead(DB.payments, []);
-  
+
   const userCount = Object.keys(users).length;
-  const premiumUsers = Object.values(users).filter(u => 
+  const premiumUsers = Object.values(users).filter(u =>
     u.premiumUntil && new Date(u.premiumUntil) > new Date()
   ).length;
-  
+
   res.json({
     connected: analytics.connected || false,
     totalUsers: userCount,
     premiumUsers,
     freeUsers: userCount - premiumUsers,
     totalPayments: payments.length,
-    revenue: payments.reduce((sum, p) => sum + (p.amount || 0), 0)
+    revenue: 0
   });
 });
 
@@ -265,42 +265,7 @@ app.get("/api/users", (req, res) => {
   res.json(userList);
 });
 
-// M-Pesa callback endpoint
-app.post("/api/mpesa/callback", (req, res) => {
-  console.log("M-Pesa Callback:", JSON.stringify(req.body, null, 2));
-  
-  const { Body } = req.body;
-  if (Body?.stkCallback) {
-    const { ResultCode, ResultDesc, CallbackMetadata } = Body.stkCallback;
-    
-    if (ResultCode === 0 && CallbackMetadata) {
-      const items = CallbackMetadata.Item || [];
-      const payment = {
-        timestamp: new Date().toISOString(),
-        amount: items.find(i => i.Name === "Amount")?.Value,
-        phone: items.find(i => i.Name === "PhoneNumber")?.Value,
-        receipt: items.find(i => i.Name === "MpesaReceiptNumber")?.Value,
-        status: "success"
-      };
-      
-      const payments = safeRead(DB.payments, []);
-      payments.push(payment);
-      write(DB.payments, payments);
-      
-      // Upgrade user to premium
-      if (payment.phone) {
-        const users = safeRead(DB.users, {});
-        const userJid = `${payment.phone}@s.whatsapp.net`;
-        if (users[userJid]) {
-          users[userJid].premiumUntil = new Date(Date.now() + 30*24*60*60*1000).toISOString();
-          write(DB.users, users);
-        }
-      }
-    }
-  }
-  
-  res.json({ ResultCode: 0, ResultDesc: "Success" });
-});
+// M-Pesa callback endpoint - REMOVED
 
 /* =========================
    SESSION & LOGS API
@@ -478,7 +443,7 @@ const keepAlive = async () => {
 
 // Start keep-alive pings after server starts
 const startKeepAlive = () => {
-  console.log(`🔄 Starting keep-alive system (pinging every ${PING_INTERVAL/1000}s)`);
+  console.log(`🔄 Starting keep-alive system (pinging every ${PING_INTERVAL / 1000}s)`);
   setInterval(keepAlive, PING_INTERVAL);
   // Initial ping after 30 seconds
   setTimeout(keepAlive, 30000);

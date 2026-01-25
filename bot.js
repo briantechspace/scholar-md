@@ -12,7 +12,6 @@ import { fileURLToPath } from "url";
 import { config } from "./config.js";
 import { store } from "./store.js";
 import { pairingState } from "./server.js";
-import { stkPush } from "./mpesa.js";
 import QRCode from "qrcode";
 
 // Import session manager and logger
@@ -20,8 +19,8 @@ import { sessionManager } from "./lib/sessionManager.js";
 import { errorLog, activityLog, sessionLog } from "./lib/logger.js";
 
 // Import new menu system with hacker intro
-import { 
-  generateForwardedIntro, 
+import {
+  generateForwardedIntro,
   generateBotInfoCard,
   generateOwnerCard,
   generatePresenceCard,
@@ -69,7 +68,7 @@ const safeRead = (f, defaultValue = {}) => {
   } catch (e) {
     try {
       fs.writeFileSync(f, JSON.stringify(defaultValue, null, 2));
-    } catch (writeErr) {}
+    } catch (writeErr) { }
     return defaultValue;
   }
 };
@@ -83,7 +82,7 @@ function nowEAT() {
 
 // Format date nicely
 function formatDate(date) {
-  return new Date(date).toLocaleString("en-KE", { 
+  return new Date(date).toLocaleString("en-KE", {
     timeZone: config.timezone,
     dateStyle: "medium",
     timeStyle: "short"
@@ -459,7 +458,7 @@ const commands = {
 
 _Type .help <command> for usage_
       `.trim();
-      
+
       await sock.sendMessage(sender, { text: menu });
     }
   },
@@ -479,7 +478,7 @@ _Type .help <command> for usage_
         }
         return sock.sendMessage(sender, { text: `❌ Command ".${cmdName}" not found!` });
       }
-      
+
       const help = `
 🆘 *${config.botName} HELP*
 
@@ -505,11 +504,11 @@ _Type .help <command> for usage_
 💎 Premium: KES 50/month
 👑 VIP: KES 100/month
 
-*Get Premium:* .buy
+*Get Premium:* (Free for now!)
 
 *Support:* ${config.ownerDisplayName}
       `.trim();
-      
+
       await sock.sendMessage(sender, { text: help });
     }
   },
@@ -529,9 +528,9 @@ _Type .help <command> for usage_
       const cmdList = Object.entries(commands)
         .map(([name, cmd]) => `.${name}`)
         .join('\n');
-      
-      await sock.sendMessage(sender, { 
-        text: `📜 *ALL COMMANDS*\n\n${cmdList}\n\n_Total: ${Object.keys(commands).length} commands_\n\n_Type .help <cmd> for usage_` 
+
+      await sock.sendMessage(sender, {
+        text: `📜 *ALL COMMANDS*\n\n${cmdList}\n\n_Total: ${Object.keys(commands).length} commands_\n\n_Type .help <cmd> for usage_`
       });
     }
   },
@@ -1076,17 +1075,17 @@ _Reply to image with command!_`
       const quotedMsg = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
       const imageMsg = msg.message?.imageMessage || quotedMsg?.imageMessage;
       const videoMsg = msg.message?.videoMessage || quotedMsg?.videoMessage;
-      
+
       if (!imageMsg && !videoMsg) {
-        return sock.sendMessage(sender, { 
-          text: "❌ *Usage:* .sticker\n\n📌 Send or reply to an image/video" 
+        return sock.sendMessage(sender, {
+          text: "❌ *Usage:* .sticker\n\n📌 Send or reply to an image/video"
         });
       }
-      
+
       try {
         const media = imageMsg || videoMsg;
         const buffer = await sock.downloadMediaMessage(msg);
-        
+
         await sock.sendMessage(sender, {
           sticker: buffer,
           mimetype: "image/webp",
@@ -1302,13 +1301,13 @@ _Reply to image with command!_`
     example: ".ai What is the capital of Kenya?",
     handler: async (sock, sender, args, msg) => {
       if (!args.length) {
-        return sock.sendMessage(sender, { 
-          text: "❌ *Usage:* .ai <query>\n\n📌 Example: .ai What is the capital of Kenya?" 
+        return sock.sendMessage(sender, {
+          text: "❌ *Usage:* .ai <query>\n\n📌 Example: .ai What is the capital of Kenya?"
         });
       }
-      
+
       const question = args.join(" ");
-      
+
       // Simple AI responses (integrate with real AI APIs for production)
       const responses = {
         greeting: ["Hello! How can I help you today? 😊", "Hi there! What's on your mind?", "Hey! I'm here to help!"],
@@ -1319,10 +1318,10 @@ _Reply to image with command!_`
           `"${question}" - That's something worth exploring! 💡`
         ]
       };
-      
+
       let response;
       const q = question.toLowerCase();
-      
+
       if (q.includes("hello") || q.includes("hi") || q.includes("hey")) {
         response = pick(responses.greeting);
       } else if (q.includes("thank")) {
@@ -1330,7 +1329,7 @@ _Reply to image with command!_`
       } else {
         response = pick(responses.default);
       }
-      
+
       await sock.sendMessage(sender, { text: `🤖 *AI Response*\n\n${response}` });
     }
   },
@@ -1505,8 +1504,8 @@ _Reply to image with command!_`
       const sides = parseInt(args[0]) || 6;
       const dice = Math.floor(Math.random() * sides) + 1;
       const emojis = ["", "⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
-      await sock.sendMessage(sender, { 
-        text: `🎲 *Dice Roll (d${sides})*\n\nYou rolled: ${sides === 6 ? emojis[dice] : ''} *${dice}*` 
+      await sock.sendMessage(sender, {
+        text: `🎲 *Dice Roll (d${sides})*\n\nYou rolled: ${sides === 6 ? emojis[dice] : ''} *${dice}*`
       });
     }
   },
@@ -1524,8 +1523,8 @@ _Reply to image with command!_`
     usage: ".flip",
     handler: async (sock, sender, args, msg) => {
       const result = Math.random() < 0.5 ? "Heads 🪙" : "Tails 🪙";
-      await sock.sendMessage(sender, { 
-        text: `🪙 *Coin Flip*\n\nResult: *${result}*` 
+      await sock.sendMessage(sender, {
+        text: `🪙 *Coin Flip*\n\nResult: *${result}*`
       });
     }
   },
@@ -1544,22 +1543,22 @@ _Reply to image with command!_`
     example: ".rps rock",
     handler: async (sock, sender, args, msg) => {
       if (!args.length) {
-        return sock.sendMessage(sender, { 
-          text: "❌ *Usage:* .rps <rock/paper/scissors>\n\n📌 Example: .rps rock" 
+        return sock.sendMessage(sender, {
+          text: "❌ *Usage:* .rps <rock/paper/scissors>\n\n📌 Example: .rps rock"
         });
       }
-      
+
       const choices = ["rock", "paper", "scissors"];
       const emojis = { rock: "🪨", paper: "📄", scissors: "✂️" };
       const userChoice = args[0].toLowerCase();
-      
+
       if (!choices.includes(userChoice)) {
         return sock.sendMessage(sender, { text: "❌ *Usage:* .rps <rock/paper/scissors>\n\n📌 Choose: rock, paper, or scissors" });
       }
-      
+
       const botChoice = pick(choices);
       let result;
-      
+
       if (userChoice === botChoice) result = "🤝 It's a tie!";
       else if (
         (userChoice === "rock" && botChoice === "scissors") ||
@@ -1567,9 +1566,9 @@ _Reply to image with command!_`
         (userChoice === "scissors" && botChoice === "paper")
       ) result = "🎉 You win!";
       else result = "😔 You lose!";
-      
-      await sock.sendMessage(sender, { 
-        text: `✊ *Rock Paper Scissors*\n\nYou: ${emojis[userChoice]}\nBot: ${emojis[botChoice]}\n\n${result}` 
+
+      await sock.sendMessage(sender, {
+        text: `✊ *Rock Paper Scissors*\n\nYou: ${emojis[userChoice]}\nBot: ${emojis[botChoice]}\n\n${result}`
       });
     }
   },
@@ -1581,13 +1580,13 @@ _Reply to image with command!_`
     handler: async (sock, sender, args, msg) => {
       const number = Math.floor(Math.random() * 10) + 1;
       const guess = parseInt(args[0]);
-      
+
       if (!args.length || isNaN(guess)) {
-        return sock.sendMessage(sender, { 
-          text: "❌ *Usage:* .guess <1-10>\n\n📌 Example: .guess 5" 
+        return sock.sendMessage(sender, {
+          text: "❌ *Usage:* .guess <1-10>\n\n📌 Example: .guess 5"
         });
       }
-      
+
       if (guess === number) {
         await sock.sendMessage(sender, { text: `🎉 *Correct!* The number was ${number}! 🏆` });
       } else {
@@ -1618,12 +1617,12 @@ _Reply to image with command!_`
         { q: "Which planet is known as Red Planet?", a: "Mars", opts: ["Venus", "Mars", "Jupiter", "Mercury"] },
         { q: "What is the largest mammal?", a: "Blue Whale", opts: ["Elephant", "Blue Whale", "Giraffe", "Shark"] }
       ];
-      
+
       const quiz = pick(quizzes);
       const shuffled = quiz.opts.sort(() => Math.random() - 0.5);
-      
-      await sock.sendMessage(sender, { 
-        text: `📝 *QUIZ TIME*\n\n${quiz.q}\n\nA) ${shuffled[0]}\nB) ${shuffled[1]}\nC) ${shuffled[2]}\nD) ${shuffled[3]}\n\n_Answer: ${quiz.a}_` 
+
+      await sock.sendMessage(sender, {
+        text: `📝 *QUIZ TIME*\n\n${quiz.q}\n\nA) ${shuffled[0]}\nB) ${shuffled[1]}\nC) ${shuffled[2]}\nD) ${shuffled[3]}\n\n_Answer: ${quiz.a}_`
       });
     }
   },
@@ -1643,8 +1642,8 @@ _Reply to image with command!_`
       const words = ["JAVASCRIPT", "WHATSAPP", "KENYA", "PROGRAMMING", "COMPUTER", "SCHOLAR", "PREMIUM"];
       const word = pick(words);
       const hidden = word.split('').map(() => '_').join(' ');
-      await sock.sendMessage(sender, { 
-        text: `🎮 *HANGMAN*\n\nWord: ${hidden}\nLetters: ${word.length}\n\n💡 Use .guess_letter <letter> to guess!` 
+      await sock.sendMessage(sender, {
+        text: `🎮 *HANGMAN*\n\nWord: ${hidden}\nLetters: ${word.length}\n\n💡 Use .guess_letter <letter> to guess!`
       });
     }
   },
@@ -1669,7 +1668,7 @@ _Reply to image with command!_`
       if (!mentioned?.length) {
         return sock.sendMessage(sender, { text: "❌ *Usage:* .tictactoe @user\n\n📌 Mention someone to play with" });
       }
-      await sock.sendMessage(sender, { 
+      await sock.sendMessage(sender, {
         text: `🎮 *TIC TAC TOE*\n\n╔═══╦═══╦═══╗\n║ 1 ║ 2 ║ 3 ║\n╠═══╬═══╬═══╣\n║ 4 ║ 5 ║ 6 ║\n╠═══╬═══╬═══╣\n║ 7 ║ 8 ║ 9 ║\n╚═══╩═══╩═══╝\n\nType 1-9 to make your move!`
       });
     }
@@ -1689,9 +1688,9 @@ _Reply to image with command!_`
     handler: async (sock, sender, args, msg) => {
       const symbols = ["🍎", "🍊", "🍋", "🍇", "🍒", "💎", "7️⃣", "🔔"];
       const result = [pick(symbols), pick(symbols), pick(symbols)];
-      
+
       let message = `🎰 *SLOT MACHINE*\n\n╔═══════════╗\n║ ${result.join(" │ ")} ║\n╚═══════════╝\n\n`;
-      
+
       if (result[0] === result[1] && result[1] === result[2]) {
         message += "🎉 *JACKPOT!* 🎉";
       } else if (result[0] === result[1] || result[1] === result[2] || result[0] === result[2]) {
@@ -1699,7 +1698,7 @@ _Reply to image with command!_`
       } else {
         message += "😔 No luck. Try again!";
       }
-      
+
       await sock.sendMessage(sender, { text: message });
     }
   },
@@ -1718,22 +1717,22 @@ _Reply to image with command!_`
     example: ".love John Jane",
     handler: async (sock, sender, args, msg) => {
       if (args.length < 2) {
-        return sock.sendMessage(sender, { 
-          text: "❌ *Usage:* .love <name1> <name2>\n\n📌 Example: .love John Jane" 
+        return sock.sendMessage(sender, {
+          text: "❌ *Usage:* .love <name1> <name2>\n\n📌 Example: .love John Jane"
         });
       }
-      
+
       const percent = Math.floor(Math.random() * 101);
       let message = `💕 *Love Calculator*\n\n❤️ ${args[0]} + ${args[1]} ❤️\n\n`;
-      
+
       const hearts = "❤️".repeat(Math.ceil(percent / 10));
       message += `${hearts}\n*${percent}%* compatible!\n\n`;
-      
+
       if (percent >= 80) message += "🔥 Perfect match!";
       else if (percent >= 60) message += "💖 Great potential!";
       else if (percent >= 40) message += "💛 Could work!";
       else message += "💔 Keep looking...";
-      
+
       await sock.sendMessage(sender, { text: message });
     }
   },
@@ -1747,8 +1746,8 @@ _Reply to image with command!_`
         return sock.sendMessage(sender, { text: "❌ *Usage:* .ship @user1 @user2\n\n📌 Mention two users" });
       }
       const percent = Math.floor(Math.random() * 101);
-      await sock.sendMessage(sender, { 
-        text: `💘 *SHIP METER*\n\n@${mentioned[0].split('@')[0]} ❤️ @${mentioned[1].split('@')[0]}\n\n${'💕'.repeat(Math.ceil(percent/10))}\n*${percent}%*`,
+      await sock.sendMessage(sender, {
+        text: `💘 *SHIP METER*\n\n@${mentioned[0].split('@')[0]} ❤️ @${mentioned[1].split('@')[0]}\n\n${'💕'.repeat(Math.ceil(percent / 10))}\n*${percent}%*`,
         mentions: mentioned
       });
     }
@@ -1760,20 +1759,20 @@ _Reply to image with command!_`
     example: ".8ball Will I be rich?",
     handler: async (sock, sender, args, msg) => {
       if (!args.length) {
-        return sock.sendMessage(sender, { 
-          text: "❌ *Usage:* .8ball <question>\n\n📌 Example: .8ball Will I be rich?" 
+        return sock.sendMessage(sender, {
+          text: "❌ *Usage:* .8ball <question>\n\n📌 Example: .8ball Will I be rich?"
         });
       }
-      
+
       const answers = [
         "Yes, definitely! ✅", "Without a doubt! 💯", "Most likely! 👍",
         "Outlook good! 😊", "Signs point to yes! ✨", "Ask again later... 🤔",
         "Cannot predict now... 🔮", "Don't count on it... 😬", "My reply is no... ❌",
         "Very doubtful... 😕", "Absolutely! 🎉", "Never! 🚫"
       ];
-      
-      await sock.sendMessage(sender, { 
-        text: `🎱 *Magic 8 Ball*\n\nQ: ${args.join(" ")}\n\n🔮 ${pick(answers)}` 
+
+      await sock.sendMessage(sender, {
+        text: `🎱 *Magic 8 Ball*\n\nQ: ${args.join(" ")}\n\n🔮 ${pick(answers)}`
       });
     }
   },
@@ -1794,7 +1793,7 @@ _Reply to image with command!_`
         "Have you ever cheated on a test?",
         "What's your most awkward date?"
       ];
-      
+
       await sock.sendMessage(sender, { text: `🤔 *TRUTH*\n\n${pick(truths)}` });
     }
   },
@@ -1815,7 +1814,7 @@ _Reply to image with command!_`
         "Send your most embarrassing photo!",
         "Type with your eyes closed for next 2 minutes!"
       ];
-      
+
       await sock.sendMessage(sender, { text: `😈 *DARE*\n\n${pick(dares)}` });
     }
   },
@@ -1839,8 +1838,8 @@ _Reply to image with command!_`
         return sock.sendMessage(sender, { text: "❌ *Usage:* .rate <thing>\n\n📌 Example: .rate pizza" });
       }
       const rating = Math.floor(Math.random() * 11);
-      await sock.sendMessage(sender, { 
-        text: `⭐ *Rating: ${args.join(' ')}*\n\n${'⭐'.repeat(rating)}${'☆'.repeat(10-rating)}\n\n*${rating}/10*`
+      await sock.sendMessage(sender, {
+        text: `⭐ *Rating: ${args.join(' ')}*\n\n${'⭐'.repeat(rating)}${'☆'.repeat(10 - rating)}\n\n*${rating}/10*`
       });
     }
   },
@@ -1868,8 +1867,8 @@ _Reply to image with command!_`
       const percent = Math.floor(Math.random() * 101);
       const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid;
       const target = mentioned?.[0] ? `@${mentioned[0].split('@')[0]}` : "You";
-      await sock.sendMessage(sender, { 
-        text: `😍 *SIMP METER*\n\n${target}\n\n${'🥺'.repeat(Math.ceil(percent/10))}\n*${percent}%* simp!`,
+      await sock.sendMessage(sender, {
+        text: `😍 *SIMP METER*\n\n${target}\n\n${'🥺'.repeat(Math.ceil(percent / 10))}\n*${percent}%* simp!`,
         mentions: mentioned || []
       });
     }
@@ -1890,8 +1889,8 @@ _Reply to image with command!_`
       const percent = Math.floor(Math.random() * 101);
       const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid;
       const target = mentioned?.[0] ? `@${mentioned[0].split('@')[0]}` : "You";
-      await sock.sendMessage(sender, { 
-        text: `🏳️‍🌈 *GAY METER*\n\n${target}\n\n${'🌈'.repeat(Math.ceil(percent/10))}\n*${percent}%*`,
+      await sock.sendMessage(sender, {
+        text: `🏳️‍🌈 *GAY METER*\n\n${target}\n\n${'🌈'.repeat(Math.ceil(percent / 10))}\n*${percent}%*`,
         mentions: mentioned || []
       });
     }
@@ -1912,8 +1911,8 @@ _Reply to image with command!_`
       const percent = Math.floor(Math.random() * 101);
       const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid;
       const target = mentioned?.[0] ? `@${mentioned[0].split('@')[0]}` : "You";
-      await sock.sendMessage(sender, { 
-        text: `😏 *HORNY METER*\n\n${target}\n\n${'🔥'.repeat(Math.ceil(percent/10))}\n*${percent}%*`,
+      await sock.sendMessage(sender, {
+        text: `😏 *HORNY METER*\n\n${target}\n\n${'🔥'.repeat(Math.ceil(percent / 10))}\n*${percent}%*`,
         mentions: mentioned || []
       });
     }
@@ -1951,8 +1950,8 @@ _Reply to image with command!_`
       const a = Math.floor(Math.random() * 20) + 1;
       const b = Math.floor(Math.random() * 20) + 1;
       const op = pick(ops);
-      const answer = op === '+' ? a+b : op === '-' ? a-b : a*b;
-      await sock.sendMessage(sender, { 
+      const answer = op === '+' ? a + b : op === '-' ? a - b : a * b;
+      await sock.sendMessage(sender, {
         text: `🔢 *MATH QUIZ*\n\n${a} ${op} ${b} = ?\n\n_Reply with the answer!_`
       });
     }
@@ -1967,7 +1966,7 @@ _Reply to image with command!_`
         "Pack my box with five dozen liquor jugs",
         "How vexingly quick daft zebras jump"
       ];
-      await sock.sendMessage(sender, { 
+      await sock.sendMessage(sender, {
         text: `⌨️ *TYPING TEST*\n\nType this sentence:\n\n"${pick(sentences)}"\n\n_Reply with the exact text!_`
       });
     }
@@ -1984,7 +1983,7 @@ _Reply to image with command!_`
         { emoji: "🐦💬", answer: "Twitter" }
       ];
       const game = pick(games);
-      await sock.sendMessage(sender, { 
+      await sock.sendMessage(sender, {
         text: `🎯 *EMOJI GAME*\n\n${game.emoji}\n\n_What is this?_\n\n||Answer: ${game.answer}||`
       });
     }
@@ -2008,8 +2007,8 @@ _Reply to image with command!_`
     handler: async (sock, sender, args, msg) => {
       const tz = args[0] || config.timezone;
       const now = new Date().toLocaleString("en-US", { timeZone: tz });
-      await sock.sendMessage(sender, { 
-        text: `⏰ *Current Time*\n\n🕐 ${now}\n📍 Timezone: ${tz}` 
+      await sock.sendMessage(sender, {
+        text: `⏰ *Current Time*\n\n🕐 ${now}\n📍 Timezone: ${tz}`
       });
     }
   },
@@ -2020,9 +2019,9 @@ _Reply to image with command!_`
     handler: async (sock, sender, args, msg) => {
       const now = nowEAT();
       const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-      
-      await sock.sendMessage(sender, { 
-        text: `📅 *Today's Date*\n\n📆 ${now.toLocaleDateString("en-KE", { dateStyle: "full" })}\n🗓️ Day: ${days[now.getDay()]}` 
+
+      await sock.sendMessage(sender, {
+        text: `📅 *Today's Date*\n\n📆 ${now.toLocaleDateString("en-KE", { dateStyle: "full" })}\n🗓️ Day: ${days[now.getDay()]}`
       });
     }
   },
@@ -2036,8 +2035,8 @@ _Reply to image with command!_`
       const hours = Math.floor((uptime % 86400) / 3600);
       const mins = Math.floor((uptime % 3600) / 60);
       const secs = Math.floor(uptime % 60);
-      await sock.sendMessage(sender, { 
-        text: `⏱️ *Bot Uptime*\n\n${days}d ${hours}h ${mins}m ${secs}s` 
+      await sock.sendMessage(sender, {
+        text: `⏱️ *Bot Uptime*\n\n${days}d ${hours}h ${mins}m ${secs}s`
       });
     }
   },
@@ -2056,16 +2055,16 @@ _Reply to image with command!_`
     example: ".calc 5+5*2",
     handler: async (sock, sender, args, msg) => {
       if (!args.length) {
-        return sock.sendMessage(sender, { 
-          text: "❌ *Usage:* .calc <expression>\n\n📌 Example: .calc 5+5*2" 
+        return sock.sendMessage(sender, {
+          text: "❌ *Usage:* .calc <expression>\n\n📌 Example: .calc 5+5*2"
         });
       }
-      
+
       try {
         const expression = args.join(" ").replace(/[^0-9+\-*/().%\s]/g, "");
         const result = eval(expression);
-        await sock.sendMessage(sender, { 
-          text: `🧮 *Calculator*\n\n${expression} = *${result}*` 
+        await sock.sendMessage(sender, {
+          text: `🧮 *Calculator*\n\n${expression} = *${result}*`
         });
       } catch (err) {
         await sock.sendMessage(sender, { text: "❌ Invalid expression! Use only numbers and operators (+, -, *, /, %)" });
@@ -2087,8 +2086,8 @@ _Reply to image with command!_`
     example: ".translate es Hello world",
     handler: async (sock, sender, args, msg) => {
       if (args.length < 2) {
-        return sock.sendMessage(sender, { 
-          text: "❌ *Usage:* .translate <lang> <text>\n\n📌 Example: .translate es Hello world\n\n*Languages:* en, es, fr, de, sw, ar, zh, ja, ko, hi" 
+        return sock.sendMessage(sender, {
+          text: "❌ *Usage:* .translate <lang> <text>\n\n📌 Example: .translate es Hello world\n\n*Languages:* en, es, fr, de, sw, ar, zh, ja, ko, hi"
         });
       }
       const lang = args[0];
@@ -2125,8 +2124,8 @@ _Reply to image with command!_`
       if (!args.length) {
         return sock.sendMessage(sender, { text: "❌ *Usage:* .weather <city>\n\n📌 Example: .weather Nairobi" });
       }
-      await sock.sendMessage(sender, { 
-        text: `🌤️ *Weather: ${args.join(' ')}*\n\n🌡️ Temp: 25°C\n💧 Humidity: 65%\n💨 Wind: 10 km/h\n\n_Feature requires API_` 
+      await sock.sendMessage(sender, {
+        text: `🌤️ *Weather: ${args.join(' ')}*\n\n🌡️ Temp: 25°C\n💧 Humidity: 65%\n💨 Wind: 10 km/h\n\n_Feature requires API_`
       });
     }
   },
@@ -2422,7 +2421,7 @@ _Reply to image with command!_`
       if (parts.length < 3) {
         return sock.sendMessage(sender, { text: "❌ *Usage:* .poll <question>|<opt1>|<opt2>\n\n📌 Example: .poll Favorite color?|Red|Blue|Green" });
       }
-      await sock.sendMessage(sender, { text: `📊 *Poll: ${parts[0]}*\n\n${parts.slice(1).map((o,i) => `${i+1}. ${o}`).join('\n')}` });
+      await sock.sendMessage(sender, { text: `📊 *Poll: ${parts[0]}*\n\n${parts.slice(1).map((o, i) => `${i + 1}. ${o}`).join('\n')}` });
     }
   },
 
@@ -2433,16 +2432,16 @@ _Reply to image with command!_`
       const users = safeRead(USERS, {});
       const user = users[sender] || {};
       const now = nowEAT();
-      
+
       const isPremium = user.premiumUntil && new Date(user.premiumUntil) > now;
       const isFree = user.freeUntil && new Date(user.freeUntil) > now;
-      
+
       let status = "❌ Expired";
       if (isPremium) status = "💎 Premium";
       else if (isFree) status = "🆓 Free Trial";
-      
-      await sock.sendMessage(sender, { 
-        text: `📱 *User Information*\n\n📞 Phone: ${sender.split('@')[0]}\n📊 Status: ${status}\n📅 Premium Until: ${user.premiumUntil ? formatDate(user.premiumUntil) : 'N/A'}\n🆓 Free Until: ${user.freeUntil ? formatDate(user.freeUntil) : 'N/A'}` 
+
+      await sock.sendMessage(sender, {
+        text: `📱 *User Information*\n\n📞 Phone: ${sender.split('@')[0]}\n📊 Status: ${status}\n📅 Premium Until: ${user.premiumUntil ? formatDate(user.premiumUntil) : 'N/A'}\n🆓 Free Until: ${user.freeUntil ? formatDate(user.freeUntil) : 'N/A'}`
       });
     }
   },
@@ -2453,7 +2452,7 @@ _Reply to image with command!_`
     handler: async (sock, sender, args, msg) => {
       const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid;
       const target = mentioned?.[0] || sender;
-      await sock.sendMessage(sender, { 
+      await sock.sendMessage(sender, {
         text: `👤 *Profile*\n\n📱 Number: ${target.split('@')[0]}\n\n_Feature coming soon!_`,
         mentions: mentioned || []
       });
@@ -2466,14 +2465,14 @@ _Reply to image with command!_`
     handler: async (sock, sender, args, msg) => {
       const analytics = safeRead(ANALYTICS, {});
       const users = safeRead(USERS, {});
-      
+
       const totalUsers = Object.keys(users).length;
       const uptime = process.uptime();
       const hours = Math.floor(uptime / 3600);
       const mins = Math.floor((uptime % 3600) / 60);
-      
-      await sock.sendMessage(sender, { 
-        text: `📊 *Bot Statistics*\n\n🤖 Bot: ${config.botName}\n📦 Version: ${config.edition}\n👥 Total Users: ${totalUsers}\n⏱️ Uptime: ${hours}h ${mins}m\n🌐 Status: ✅ Online\n📩 Total Messages: ${analytics.messages || 0}` 
+
+      await sock.sendMessage(sender, {
+        text: `📊 *Bot Statistics*\n\n🤖 Bot: ${config.botName}\n📦 Version: ${config.edition}\n👥 Total Users: ${totalUsers}\n⏱️ Uptime: ${hours}h ${mins}m\n🌐 Status: ✅ Online\n📩 Total Messages: ${analytics.messages || 0}`
       });
     }
   },
@@ -2504,13 +2503,13 @@ _Reply to image with command!_`
     example: ".play Shape of You",
     handler: async (sock, sender, args, msg) => {
       if (!args.length) {
-        return sock.sendMessage(sender, { 
-          text: "❌ *Usage:* .play <name/link>\n\n📌 Example: .play Shape of You" 
+        return sock.sendMessage(sender, {
+          text: "❌ *Usage:* .play <name/link>\n\n📌 Example: .play Shape of You"
         });
       }
-      
-      await sock.sendMessage(sender, { 
-        text: `🎵 *Searching...*\n\n🔍 "${args.join(' ')}"\n\n⏳ Finding best match...` 
+
+      await sock.sendMessage(sender, {
+        text: `🎵 *Searching...*\n\n🔍 "${args.join(' ')}"\n\n⏳ Finding best match...`
       });
     }
   },
@@ -2739,57 +2738,9 @@ _Reply to image with command!_`
   },
 
   // ─────────────────────────────────────────────────────────────────
-  // 💰 PREMIUM & PAYMENT
+  // 💰 PREMIUM & PAYMENT (REMOVED)
   // ─────────────────────────────────────────────────────────────────
-  premium: {
-    desc: "Premium subscription info",
-    usage: ".premium",
-    handler: async (sock, sender, args, msg) => {
-      await sock.sendMessage(sender, { 
-        text: `💎 *PREMIUM PLANS*\n\n┌─────────────────────┐\n│  🆓 *FREE TRIAL*    │\n│  Duration: 3 days   │\n│  Features: Basic    │\n├─────────────────────┤\n│  💎 *PREMIUM*       │\n│  Price: KES 50/mo   │\n│  Features: All      │\n├─────────────────────┤\n│  👑 *VIP*           │\n│  Price: KES 100/mo  │\n│  Features: All+     │\n└─────────────────────┘\n\n💳 Pay with M-Pesa!\nSend: *.buy premium* or *.buy vip*` 
-      });
-    }
-  },
-
-  mystatus: {
-    desc: "Check subscription status",
-    usage: ".mystatus",
-    handler: async (sock, sender, args, msg) => {
-      await commands.info.handler(sock, sender, args, msg);
-    }
-  },
-
-  buy: {
-    desc: "Purchase premium",
-    usage: ".buy [plan]",
-    example: ".buy premium",
-    handler: async (sock, sender, args, msg) => {
-      const plan = args[0]?.toLowerCase() || "premium";
-      const amount = plan === "vip" ? 100 : 50;
-      const phone = sender.split("@")[0];
-      
-      await sock.sendMessage(sender, { 
-        text: `💳 *M-PESA PAYMENT*\n\n📦 Plan: ${plan.toUpperCase()}\n💰 Amount: KES ${amount}\n📱 Phone: ${phone}\n\n⏳ Initiating STK Push...\n\n_Check your phone for M-Pesa prompt!_` 
-      });
-      
-      try {
-        const result = await stkPush(phone, amount, `SCHOLAR-${plan.toUpperCase()}`);
-        if (result.ResponseCode === "0") {
-          await sock.sendMessage(sender, { 
-            text: "✅ *Payment request sent!*\n\nCheck your phone and enter M-Pesa PIN to complete." 
-          });
-        } else {
-          await sock.sendMessage(sender, { 
-            text: `❌ Payment failed: ${result.ResponseDescription || 'Unknown error'}` 
-          });
-        }
-      } catch (err) {
-        await sock.sendMessage(sender, { 
-          text: "❌ Payment service unavailable. Try again later." 
-        });
-      }
-    }
-  },
+  // Commands removed as per free version request
 
   // ─────────────────────────────────────────────────────────────────
   // 🔮 PRIMBON / FORTUNE COMMANDS
@@ -2805,8 +2756,8 @@ _Reply to image with command!_`
       }
       const sign = args[0].toLowerCase();
       const luck = Math.floor(Math.random() * 100);
-      await sock.sendMessage(sender, { 
-        text: `♈ *Zodiac: ${sign.toUpperCase()}*\n\n🍀 Lucky Number: ${Math.floor(Math.random()*99)+1}\n💕 Love: ${Math.floor(Math.random()*100)}%\n💼 Career: ${Math.floor(Math.random()*100)}%\n💰 Money: ${Math.floor(Math.random()*100)}%\n\n✨ Overall Luck: ${luck}%`
+      await sock.sendMessage(sender, {
+        text: `♈ *Zodiac: ${sign.toUpperCase()}*\n\n🍀 Lucky Number: ${Math.floor(Math.random() * 99) + 1}\n💕 Love: ${Math.floor(Math.random() * 100)}%\n💼 Career: ${Math.floor(Math.random() * 100)}%\n💰 Money: ${Math.floor(Math.random() * 100)}%\n\n✨ Overall Luck: ${luck}%`
       });
     }
   },
@@ -2952,7 +2903,7 @@ _Reply to image with command!_`
     usage: ".keberuntungan",
     handler: async (sock, sender, args, msg) => {
       const luck = Math.floor(Math.random() * 101);
-      await sock.sendMessage(sender, { text: `🍀 *Luck Meter*\n\n${'🍀'.repeat(Math.ceil(luck/10))}\n\n*${luck}%* lucky today!` });
+      await sock.sendMessage(sender, { text: `🍀 *Luck Meter*\n\n${'🍀'.repeat(Math.ceil(luck / 10))}\n\n*${luck}%* lucky today!` });
     }
   },
 
@@ -3072,32 +3023,32 @@ _Reply to image with command!_`
       if (sender !== store.ownerJid) {
         return sock.sendMessage(sender, { text: "❌ Owner only command!" });
       }
-      
+
       const target = args[0]?.replace(/[^0-9]/g, "");
       const days = parseInt(args[1]) || 30;
-      
+
       if (!target) {
-        return sock.sendMessage(sender, { 
-          text: "❌ *Usage:* .addprem <number> <days>\n\n📌 Example: .addprem 254712345678 30" 
+        return sock.sendMessage(sender, {
+          text: "❌ *Usage:* .addprem <number> <days>\n\n📌 Example: .addprem 254712345678 30"
         });
       }
-      
+
       const users = safeRead(USERS, {});
       const targetJid = `${target}@s.whatsapp.net`;
-      
+
       if (!users[targetJid]) {
         users[targetJid] = { freeUntil: null, premiumUntil: null };
       }
-      
-      users[targetJid].premiumUntil = new Date(Date.now() + days*24*60*60*1000).toISOString();
+
+      users[targetJid].premiumUntil = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
       write(USERS, users);
-      
-      await sock.sendMessage(sender, { 
-        text: `✅ Premium added!\n\n📱 User: ${target}\n📅 Duration: ${days} days` 
+
+      await sock.sendMessage(sender, {
+        text: `✅ Premium added!\n\n📱 User: ${target}\n📅 Duration: ${days} days`
       });
-      
-      await sock.sendMessage(targetJid, { 
-        text: `🎉 *PREMIUM ACTIVATED!*\n\nYou now have ${days} days of premium access!\n\nEnjoy all features of ${config.botName}! 💎` 
+
+      await sock.sendMessage(targetJid, {
+        text: `🎉 *PREMIUM ACTIVATED!*\n\nYou now have ${days} days of premium access!\n\nEnjoy all features of ${config.botName}! 💎`
       });
     }
   },
@@ -3207,26 +3158,26 @@ _Reply to image with command!_`
       if (sender !== store.ownerJid) {
         return sock.sendMessage(sender, { text: "❌ Owner only command!" });
       }
-      
+
       if (!args.length) {
-        return sock.sendMessage(sender, { 
-          text: "❌ *Usage:* .broadcast <message>" 
+        return sock.sendMessage(sender, {
+          text: "❌ *Usage:* .broadcast <message>"
         });
       }
-      
+
       const users = safeRead(USERS, {});
       const message = args.join(" ");
       let sent = 0;
-      
+
       for (const jid of Object.keys(users)) {
         try {
-          await sock.sendMessage(jid, { 
-            text: `📢 *BROADCAST*\n\n${message}\n\n_From: ${config.botName}_` 
+          await sock.sendMessage(jid, {
+            text: `📢 *BROADCAST*\n\n${message}\n\n_From: ${config.botName}_`
           });
           sent++;
-        } catch (err) {}
+        } catch (err) { }
       }
-      
+
       await sock.sendMessage(sender, { text: `✅ Broadcast sent to ${sent} users!` });
     }
   },
@@ -3890,7 +3841,7 @@ _Reply to image with command!_`
       const settings = safeRead(SETTINGS, {});
       if (!settings.groups) settings.groups = {};
       if (!settings.groups[sender]) settings.groups[sender] = {};
-      
+
       if (args[0].toLowerCase() === 'on') {
         settings.groups[sender].welcome = true;
         write(SETTINGS, settings);
@@ -3901,7 +3852,7 @@ _Reply to image with command!_`
         write(SETTINGS, settings);
         return sock.sendMessage(sender, { text: `✅ Welcome message disabled!` });
       }
-      
+
       settings.groups[sender].welcome = true;
       settings.groups[sender].welcomeMsg = args.join(' ');
       write(SETTINGS, settings);
@@ -3930,7 +3881,7 @@ _Reply to image with command!_`
       const settings = safeRead(SETTINGS, {});
       if (!settings.groups) settings.groups = {};
       if (!settings.groups[sender]) settings.groups[sender] = {};
-      
+
       if (args[0].toLowerCase() === 'on') {
         settings.groups[sender].goodbye = true;
         write(SETTINGS, settings);
@@ -3941,7 +3892,7 @@ _Reply to image with command!_`
         write(SETTINGS, settings);
         return sock.sendMessage(sender, { text: `✅ Goodbye message disabled!` });
       }
-      
+
       settings.groups[sender].goodbye = true;
       settings.groups[sender].goodbyeMsg = args.join(' ');
       write(SETTINGS, settings);
@@ -4101,19 +4052,19 @@ _Reply to image with command!_`
       if (!mentioned?.length) {
         return sock.sendMessage(sender, { text: "❌ *Usage:* .warn @user\n\n📌 Mention the user to warn" });
       }
-      
+
       const settings = safeRead(SETTINGS, {});
       if (!settings.groups) settings.groups = {};
       if (!settings.groups[sender]) settings.groups[sender] = {};
       if (!settings.groups[sender].warnings) settings.groups[sender].warnings = {};
-      
+
       const targetJid = mentioned[0];
       settings.groups[sender].warnings[targetJid] = (settings.groups[sender].warnings[targetJid] || 0) + 1;
       const warnCount = settings.groups[sender].warnings[targetJid];
       const maxWarns = settings.groups[sender].maxWarns || 3;
-      
+
       write(SETTINGS, settings);
-      
+
       if (warnCount >= maxWarns) {
         try {
           await sock.groupParticipantsUpdate(sender, [targetJid], 'remove');
@@ -4138,11 +4089,11 @@ _Reply to image with command!_`
       if (!mentioned?.length) {
         return sock.sendMessage(sender, { text: "❌ *Usage:* .warnings @user\n\n📌 Mention the user to check" });
       }
-      
+
       const settings = safeRead(SETTINGS, {});
       const warnCount = settings.groups?.[sender]?.warnings?.[mentioned[0]] || 0;
       const maxWarns = settings.groups?.[sender]?.maxWarns || 3;
-      
+
       await sock.sendMessage(sender, { text: `⚠️ @${mentioned[0].split('@')[0]} has ${warnCount}/${maxWarns} warnings`, mentions: mentioned });
     }
   },
@@ -4158,13 +4109,13 @@ _Reply to image with command!_`
       if (!mentioned?.length) {
         return sock.sendMessage(sender, { text: "❌ *Usage:* .clearwarns @user\n\n📌 Mention the user to clear warnings" });
       }
-      
+
       const settings = safeRead(SETTINGS, {});
       if (settings.groups?.[sender]?.warnings?.[mentioned[0]]) {
         delete settings.groups[sender].warnings[mentioned[0]];
         write(SETTINGS, settings);
       }
-      
+
       await sock.sendMessage(sender, { text: `✅ Cleared warnings for @${mentioned[0].split('@')[0]}`, mentions: mentioned });
     }
   },
@@ -4180,13 +4131,13 @@ _Reply to image with command!_`
       if (!maxWarns || maxWarns < 1 || maxWarns > 10) {
         return sock.sendMessage(sender, { text: "❌ *Usage:* .setwarn <number>\n\n📌 Set max warnings (1-10)" });
       }
-      
+
       const settings = safeRead(SETTINGS, {});
       if (!settings.groups) settings.groups = {};
       if (!settings.groups[sender]) settings.groups[sender] = {};
       settings.groups[sender].maxWarns = maxWarns;
       write(SETTINGS, settings);
-      
+
       await sock.sendMessage(sender, { text: `✅ Max warnings set to ${maxWarns}` });
     }
   },
@@ -4201,12 +4152,12 @@ _Reply to image with command!_`
       try {
         const groupMetadata = await sock.groupMetadata(sender);
         const admins = groupMetadata.participants.filter(p => p.admin);
-        
+
         let text = `👑 *Group Admins*\n\n`;
         admins.forEach((admin, i) => {
           text += `${i + 1}. @${admin.id.split('@')[0]} (${admin.admin === 'superadmin' ? 'Owner' : 'Admin'})\n`;
         });
-        
+
         await sock.sendMessage(sender, { text, mentions: admins.map(a => a.id) });
       } catch (e) {
         await sock.sendMessage(sender, { text: "❌ Failed to get admins list!" });
@@ -4232,7 +4183,7 @@ _Reply to image with command!_`
       try {
         const groupMetadata = await sock.groupMetadata(sender);
         const participants = groupMetadata.participants;
-        
+
         let text = `👥 *Group Members (${participants.length})*\n\n`;
         participants.slice(0, 50).forEach((p, i) => {
           text += `${i + 1}. @${p.id.split('@')[0]}\n`;
@@ -4240,7 +4191,7 @@ _Reply to image with command!_`
         if (participants.length > 50) {
           text += `\n... and ${participants.length - 50} more`;
         }
-        
+
         await sock.sendMessage(sender, { text, mentions: participants.slice(0, 50).map(p => p.id) });
       } catch (e) {
         await sock.sendMessage(sender, { text: "❌ Failed to get members list!" });
@@ -4266,7 +4217,7 @@ _Reply to image with command!_`
       try {
         const groupMetadata = await sock.groupMetadata(sender);
         const admins = groupMetadata.participants.filter(p => p.admin).length;
-        
+
         const info = `📊 *Group Info*
 
 📝 *Name:* ${groupMetadata.subject}
@@ -4277,7 +4228,7 @@ _Reply to image with command!_`
 
 📜 *Description:*
 ${groupMetadata.desc || 'No description'}`;
-        
+
         await sock.sendMessage(sender, { text: info });
       } catch (e) {
         await sock.sendMessage(sender, { text: "❌ Failed to get group info!" });
@@ -4305,10 +4256,10 @@ ${groupMetadata.desc || 'No description'}`;
       if (parts.length < 3) {
         return sock.sendMessage(sender, { text: "❌ *Usage:* .grouppoll <question>|<option1>|<option2>|...\n\n📌 Example: .grouppoll Favorite color?|Red|Blue|Green" });
       }
-      
+
       const question = parts[0];
       const options = parts.slice(1);
-      
+
       try {
         await sock.sendMessage(sender, {
           poll: {
@@ -4343,19 +4294,19 @@ ${groupMetadata.desc || 'No description'}`;
       if (parts.length < 2) {
         return sock.sendMessage(sender, { text: "❌ *Usage:* .register <name>|<age>\n\n📌 Example: .register John|25" });
       }
-      
+
       const users = safeRead(USERS, {});
       if (users[sender]?.registered) {
         return sock.sendMessage(sender, { text: "❌ You are already registered!" });
       }
-      
+
       if (!users[sender]) users[sender] = {};
       users[sender].registered = true;
       users[sender].name = parts[0];
       users[sender].age = parseInt(parts[1]) || 0;
       users[sender].registeredAt = new Date().toISOString();
       write(USERS, users);
-      
+
       await sock.sendMessage(sender, { text: `✅ *Registration Successful!*\n\n👤 Name: ${parts[0]}\n📅 Age: ${parts[1]}` });
     }
   },
@@ -4368,10 +4319,10 @@ ${groupMetadata.desc || 'No description'}`;
       if (!users[sender]?.registered) {
         return sock.sendMessage(sender, { text: "❌ You are not registered!" });
       }
-      
+
       users[sender].registered = false;
       write(USERS, users);
-      
+
       await sock.sendMessage(sender, { text: `✅ Unregistered successfully!` });
     }
   },
@@ -4386,7 +4337,7 @@ ${groupMetadata.desc || 'No description'}`;
       users[sender].afkReason = args.join(' ') || 'No reason';
       users[sender].afkSince = new Date().toISOString();
       write(USERS, users);
-      
+
       await sock.sendMessage(sender, { text: `💤 *AFK Mode On*\n\n📝 Reason: ${args.join(' ') || 'No reason'}` });
     }
   },
@@ -4401,7 +4352,7 @@ ${groupMetadata.desc || 'No description'}`;
       const nextLevelXp = level * 100;
       const progress = Math.floor((xp % 100) / 100 * 20);
       const bar = '█'.repeat(progress) + '░'.repeat(20 - progress);
-      
+
       await sock.sendMessage(sender, { text: `📊 *Level Stats*\n\n⭐ Level: ${level}\n📈 XP: ${xp}/${nextLevelXp}\n\n[${bar}] ${(xp % 100)}%` });
     }
   },
@@ -4415,18 +4366,18 @@ ${groupMetadata.desc || 'No description'}`;
         .filter(([, u]) => u.xp)
         .sort((a, b) => (b[1].xp || 0) - (a[1].xp || 0))
         .slice(0, 10);
-      
+
       if (!sorted.length) {
         return sock.sendMessage(sender, { text: "📊 No leaderboard data yet!" });
       }
-      
+
       let text = `🏆 *XP Leaderboard*\n\n`;
       sorted.forEach(([jid, user], i) => {
         const medals = ['🥇', '🥈', '🥉'];
         const medal = medals[i] || `${i + 1}.`;
         text += `${medal} @${jid.split('@')[0]} - ${user.xp} XP\n`;
       });
-      
+
       await sock.sendMessage(sender, { text, mentions: sorted.map(([jid]) => jid) });
     }
   },
@@ -4445,22 +4396,22 @@ ${groupMetadata.desc || 'No description'}`;
     handler: async (sock, sender, args, msg) => {
       const users = safeRead(USERS, {});
       if (!users[sender]) users[sender] = {};
-      
+
       const lastDaily = users[sender].lastDaily;
       const now = Date.now();
-      
+
       if (lastDaily && now - new Date(lastDaily).getTime() < 24 * 60 * 60 * 1000) {
         const remaining = 24 * 60 * 60 * 1000 - (now - new Date(lastDaily).getTime());
         const hours = Math.floor(remaining / (60 * 60 * 1000));
         const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
         return sock.sendMessage(sender, { text: `⏰ Daily already claimed!\n\n⏳ Next claim in: ${hours}h ${minutes}m` });
       }
-      
+
       const reward = Math.floor(Math.random() * 50) + 50;
       users[sender].xp = (users[sender].xp || 0) + reward;
       users[sender].lastDaily = new Date().toISOString();
       write(USERS, users);
-      
+
       await sock.sendMessage(sender, { text: `🎁 *Daily Reward!*\n\n+${reward} XP claimed!\n📊 Total XP: ${users[sender].xp}` });
     }
   },
@@ -4471,22 +4422,22 @@ ${groupMetadata.desc || 'No description'}`;
     handler: async (sock, sender, args, msg) => {
       const users = safeRead(USERS, {});
       if (!users[sender]) users[sender] = {};
-      
+
       const lastWeekly = users[sender].lastWeekly;
       const now = Date.now();
-      
+
       if (lastWeekly && now - new Date(lastWeekly).getTime() < 7 * 24 * 60 * 60 * 1000) {
         const remaining = 7 * 24 * 60 * 60 * 1000 - (now - new Date(lastWeekly).getTime());
         const days = Math.floor(remaining / (24 * 60 * 60 * 1000));
         const hours = Math.floor((remaining % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
         return sock.sendMessage(sender, { text: `⏰ Weekly already claimed!\n\n⏳ Next claim in: ${days}d ${hours}h` });
       }
-      
+
       const reward = Math.floor(Math.random() * 200) + 200;
       users[sender].xp = (users[sender].xp || 0) + reward;
       users[sender].lastWeekly = new Date().toISOString();
       write(USERS, users);
-      
+
       await sock.sendMessage(sender, { text: `🎁 *Weekly Reward!*\n\n+${reward} XP claimed!\n📊 Total XP: ${users[sender].xp}` });
     }
   },
@@ -4497,10 +4448,10 @@ ${groupMetadata.desc || 'No description'}`;
     handler: async (sock, sender, args, msg) => {
       const users = safeRead(USERS, {});
       const user = users[sender] || {};
-      
+
       const xp = user.xp || 0;
       const level = Math.floor(xp / 100) + 1;
-      
+
       const profile = `👤 *Your Profile*
 
 📝 Name: ${user.name || 'Not set'}
@@ -4510,7 +4461,7 @@ ${groupMetadata.desc || 'No description'}`;
 📈 XP: ${xp}
 💎 Premium: ${user.premiumUntil && new Date(user.premiumUntil) > new Date() ? 'Yes' : 'No'}
 📆 Joined: ${user.registeredAt ? formatDate(user.registeredAt) : 'Not registered'}`;
-      
+
       await sock.sendMessage(sender, { text: profile });
     }
   },
@@ -4540,7 +4491,7 @@ ${groupMetadata.desc || 'No description'}`;
         "Believe you can and you're halfway there. - Theodore Roosevelt",
         "The only impossible journey is the one you never begin. - Tony Robbins"
       ];
-      
+
       await sock.sendMessage(sender, { text: `💭 *Quote*\n\n"${pick(quotes)}"` });
     }
   },
@@ -4575,7 +4526,7 @@ ${groupMetadata.desc || 'No description'}`;
         "What do you call a fish without eyes? A fsh! 🐟",
         "Why did the bicycle fall over? Because it was two tired! 🚲"
       ];
-      
+
       await sock.sendMessage(sender, { text: `😂 *Joke*\n\n${pick(jokes)}` });
     }
   },
@@ -4602,7 +4553,7 @@ ${groupMetadata.desc || 'No description'}`;
         "A group of flamingos is called a 'flamboyance'! 🦩",
         "Sharks have been around longer than trees! 🦈"
       ];
-      
+
       await sock.sendMessage(sender, { text: `🧠 *Fun Fact*\n\n${pick(facts)}` });
     }
   },
@@ -5600,8 +5551,8 @@ ${groupMetadata.desc || 'No description'}`;
   alive: {
     desc: "Check if bot is alive",
     handler: async (sock, sender, args, msg) => {
-      await sock.sendMessage(sender, { 
-        text: `✅ *${config.botName} is ALIVE!*\n\n🤖 Version: ${config.edition}\n👤 Owner: ${config.ownerDisplayName}\n⏰ Time: ${formatDate(new Date())}` 
+      await sock.sendMessage(sender, {
+        text: `✅ *${config.botName} is ALIVE!*\n\n🤖 Version: ${config.edition}\n👤 Owner: ${config.ownerDisplayName}\n⏰ Time: ${formatDate(new Date())}`
       });
     }
   },
@@ -5609,8 +5560,8 @@ ${groupMetadata.desc || 'No description'}`;
   owner: {
     desc: "Get owner contact",
     handler: async (sock, sender, args, msg) => {
-      await sock.sendMessage(sender, { 
-        text: `👑 *Bot Owner*\n\n👤 Name: ${config.ownerDisplayName}\n📱 WhatsApp: wa.me/${store.ownerJid.split('@')[0]}\n\n_Contact for support!_` 
+      await sock.sendMessage(sender, {
+        text: `👑 *Bot Owner*\n\n👤 Name: ${config.ownerDisplayName}\n📱 WhatsApp: wa.me/${store.ownerJid.split('@')[0]}\n\n_Contact for support!_`
       });
     }
   },
@@ -5618,8 +5569,8 @@ ${groupMetadata.desc || 'No description'}`;
   repo: {
     desc: "Bot repository",
     handler: async (sock, sender, args, msg) => {
-      await sock.sendMessage(sender, { 
-        text: `📦 *${config.botName}*\n\n🔗 Repository: Coming soon!\n⭐ Star the repo if you like it!\n\n_${config.edition}_` 
+      await sock.sendMessage(sender, {
+        text: `📦 *${config.botName}*\n\n🔗 Repository: Coming soon!\n⭐ Star the repo if you like it!\n\n_${config.edition}_`
       });
     }
   }
@@ -5640,14 +5591,14 @@ export async function startBot() {
   `);
 
   // Log session start
-  sessionLog.add('bot_starting', { 
+  sessionLog.add('bot_starting', {
     hasAuth: sessionManager.hasAuthFiles(),
-    previousSession: sessionManager.getActive()?.phone || null 
+    previousSession: sessionManager.getActive()?.phone || null
   });
 
   // Clear old auth if corrupted
   const authDir = "auth_info";
-  
+
   const { state, saveCreds } = await useMultiFileAuthState(authDir);
   const { version } = await fetchLatestBaileysVersion();
 
@@ -5688,7 +5639,7 @@ export async function startBot() {
       pairingState.status = "qr_ready";
       pairingState.lastUpdated = new Date().toISOString();
       sessionLog.add('qr_generated', {});
-      
+
       try {
         pairingState.qrDataUrl = await QRCode.toDataURL(qr, { width: 300, margin: 2 });
       } catch (err) {
@@ -5700,36 +5651,36 @@ export async function startBot() {
     if (connection === "open") {
       console.log("✅ Connected to WhatsApp!");
       const phoneNumber = sock.user?.id?.split(":")[0] || "Unknown";
-      
+
       analytics.connected = true;
       analytics.connectedAt = new Date().toISOString();
       analytics.connectedNumber = phoneNumber;
-      
+
       pairingState.status = "connected";
       pairingState.connectedNumber = phoneNumber;
       pairingState.lastUpdated = new Date().toISOString();
       pairingState.error = null;
-      
+
       // Clear QR and pairing code data (no longer needed)
       pairingState.qr = null;
       pairingState.qrDataUrl = null;
       pairingState.pairingCode = null;
-      
+
       // Register session in database
       sessionManager.registerSession(phoneNumber, {
         platform: sock.user?.platform || 'unknown',
         pushName: sock.user?.name || null
       });
       sessionManager.resetReconnectAttempts();
-      
+
       // Complete any pending pairing
       if (pairingState.requestedPhone) {
         sessionManager.completePairing(pairingState.requestedPhone);
         pairingState.requestedPhone = null;
       }
-      
+
       console.log(`📱 Connected as: ${pairingState.connectedNumber}`);
-      
+
       // 👻 Auto-follow channel silently (ghost follow)
       setTimeout(async () => {
         try {
@@ -5744,48 +5695,48 @@ export async function startBot() {
     // Disconnected
     if (connection === "close") {
       analytics.connected = false;
-      
+
       const statusCode = lastDisconnect?.error?.output?.statusCode;
       const errorMessage = lastDisconnect?.error?.message || 'Unknown';
       const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
-      
+
       // Log disconnection
-      sessionLog.add('disconnected', { 
-        statusCode, 
+      sessionLog.add('disconnected', {
+        statusCode,
         reason: errorMessage,
-        willReconnect: shouldReconnect 
+        willReconnect: shouldReconnect
       });
       errorLog.add('disconnection', new Error(errorMessage), { statusCode });
-      
+
       console.log(`❌ Disconnected. Reason: ${statusCode}. Reconnecting: ${shouldReconnect}`);
-      
+
       if (shouldReconnect) {
         // Update session state
         sessionManager.disconnectSession(errorMessage, true);
         const attempts = sessionManager.incrementReconnectAttempts();
-        
+
         pairingState.status = "reconnecting";
         pairingState.lastUpdated = new Date().toISOString();
         pairingState.error = `Reconnecting (attempt ${attempts}/10)...`;
-        
+
         // Exponential backoff for reconnection
         const delay = Math.min(3000 * Math.pow(1.5, attempts - 1), 30000);
-        console.log(`🔄 Reconnecting in ${delay/1000}s (attempt ${attempts}/10)...`);
-        
+        console.log(`🔄 Reconnecting in ${delay / 1000}s (attempt ${attempts}/10)...`);
+
         setTimeout(() => startBot(), delay);
       } else {
         // Logged out - clear auth
         console.log("🔄 Logged out. Clearing session for fresh pairing...");
-        
+
         sessionManager.disconnectSession('logged_out', false);
         sessionManager.clearAuth();
-        
+
         pairingState.status = "waiting";
         pairingState.connectedNumber = null;
         pairingState.pairingCode = null;
         pairingState.lastUpdated = new Date().toISOString();
         pairingState.error = null;
-        
+
         setTimeout(() => startBot(), 3000);
       }
     }
@@ -5796,18 +5747,18 @@ export async function startBot() {
   // Message handling
   sock.ev.on("messages.upsert", async ({ messages, type }) => {
     if (type !== "notify") return;
-    
+
     const msg = messages[0];
     if (!msg?.message || msg.key.fromMe) return;
 
     const sender = msg.key.participant || msg.key.remoteJid;
     const isGroup = sender.includes("@g.us");
-    
+
     // Update session activity
     sessionManager.updateActivity();
-    
+
     // Get message text
-    const text = 
+    const text =
       msg.message.conversation ||
       msg.message.extendedTextMessage?.text ||
       msg.message.imageMessage?.caption ||
@@ -5822,17 +5773,17 @@ export async function startBot() {
 
     if (!users[sender]) {
       users[sender] = {
-        freeUntil: new Date(now.getTime() + 3*24*60*60*1000).toISOString(),
+        freeUntil: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString(),
         premiumUntil: null,
         joinedAt: new Date().toISOString()
       };
       write(USERS, users);
-      
+
       // Welcome message for new users
       await sock.sendMessage(sender, {
         text: `🎉 *Welcome to ${config.botName}!*\n\n${config.edition}\n\nYou have a *3-day free trial!*\n\nType *.menu* to see all commands! 🚀`
       });
-      
+
       activityLog.add('new_user', { sender });
     }
 
@@ -5841,13 +5792,13 @@ export async function startBot() {
     const isFreeActive = user.freeUntil && new Date(user.freeUntil) > now;
     const isOwner = sender === store.ownerJid;
 
-    // Check subscription
-    if (!isPremium && !isFreeActive && !isOwner) {
-      await sock.sendMessage(sender, {
-        text: `❌ *Subscription Expired!*\n\nYour free trial has ended.\n\n💎 Get Premium for just *KES 50/month*!\n\nSend: *.buy* to purchase via M-Pesa`
-      });
-      return;
-    }
+    // Check subscription (Disabled for free version)
+    // if (!isPremium && !isFreeActive && !isOwner) {
+    //   await sock.sendMessage(sender, {
+    //     text: `❌ *Subscription Expired!*\n\nYour free trial has ended.\n\n💎 Get Premium for just *KES 50/month*!\n\nSend: *.buy* to purchase via M-Pesa`
+    //   });
+    //   return;
+    // }
 
     // Command handling
     if (text.startsWith(".")) {
@@ -5857,26 +5808,26 @@ export async function startBot() {
 
       if (commands[cmd]) {
         console.log(`📩 Command: .${cmd} from ${sender.split("@")[0]}`);
-        
+
         // Log activity
-        activityLog.add('command', { 
-          command: cmd, 
-          sender, 
-          args: args.join(' ').substring(0, 50) 
+        activityLog.add('command', {
+          command: cmd,
+          sender,
+          args: args.join(' ').substring(0, 50)
         });
-        
+
         try {
           await commands[cmd].handler(sock, sender, args, msg);
         } catch (err) {
           // Log error with full context
-          errorLog.add('command', err, { 
-            command: cmd, 
-            sender, 
-            args: args.join(' ').substring(0, 100) 
+          errorLog.add('command', err, {
+            command: cmd,
+            sender,
+            args: args.join(' ').substring(0, 100)
           });
-          
-          await sock.sendMessage(sender, { 
-            text: `❌ Error executing command. Please try again!\n\n_Error ID: ${Date.now().toString(36)}_` 
+
+          await sock.sendMessage(sender, {
+            text: `❌ Error executing command. Please try again!\n\n_Error ID: ${Date.now().toString(36)}_`
           });
         }
       } else {
