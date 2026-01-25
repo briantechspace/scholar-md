@@ -5749,6 +5749,9 @@ export async function startBot() {
     if (type !== "notify") return;
 
     const msg = messages[0];
+    // Ignore status updates
+    if (msg.key.remoteJid === "status@broadcast") return;
+
     if (!msg?.message || msg.key.fromMe) return;
 
     const sender = msg.key.participant || msg.key.remoteJid;
@@ -5764,6 +5767,9 @@ export async function startBot() {
       msg.message.imageMessage?.caption ||
       msg.message.videoMessage?.caption ||
       "";
+
+    // DEBUG: Log incoming message
+    console.log(`📩 Message from ${sender.split('@')[0]}: ${text.substring(0, 50)}`);
 
     if (!text) return;
 
